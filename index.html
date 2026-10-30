@@ -5,6 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="theme-color" content="#111111">
+<link rel="manifest" href="./manifest.webmanifest">
 <title>GRASSHOPPER SHOOTING TEST</title>
 
 <style>
@@ -1208,6 +1209,14 @@ $("recordDate").value=today();
 renderSettings();
 renderPosition();
 renderAll();
+</script>
+ <script>
+if ("serviceWorker" in navigator) {
+  window.addEventListener("load", () => {
+    navigator.serviceWorker.register("./sw.js")
+      .catch(error => console.error("Service Worker registration failed:", error));
+  });
+}
 </script>
 </body>
 </html>
