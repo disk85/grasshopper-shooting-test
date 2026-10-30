@@ -146,10 +146,52 @@ function renderPosition(){
  let entered=0;
  $("playerInputs").innerHTML=players.map(p=>{const r=get(d,p.id,k,cur.index);if(r)entered++;return `<div class="player-row ${r?"done":""}"><div><b>${esc(p.name)}</b></div><input type="number" inputmode="numeric" min="0" max="${r?.shots??shots}" step="1" placeholder="成功本数" data-entry="${esc(p.id)}" value="${r?r.made:""}"><div class="rate-text">${r?pct(r.made,r.shots):"未入力"}</div></div>`}).join("")||'<p class="small">選手を登録してください。</p>';
  $("playerInputs").querySelectorAll("[data-entry]").forEach(input=>{
-  const p=input.dataset.entry;const row=input.closest(".player-row"),rate=row.querySelector(".rate-text");let valid=true;
-  input.addEventListener("input",()=>{const v=input.value.trim(),n=Number(v),max=Number(input.max);valid=v===""||(Number.isInteger(n)&&n>=0&&n<=max);input.classList.toggle("error",!valid);rate.textContent=valid?(v===""?"未入力":"入力待ち"):`0〜${max}本で入力`;rate.classList.toggle("error",!valid)});
-  input.addEventListener("change",()=>{const v=input.value.trim(),n=Number(v);if(v==="" ){set(d,p,k,cur.index,null);row.classList.remove("done");rate.textContent="未入力"}else if(Number.isInteger(n)&&n>=0&&n<=Number(input.max)){set(d,p,k,cur.index,n);row.classList.add("done");rate.textContent=pct(n,Number(input.max))}else{return}const entered=[...document.querySelectorAll("[data-entry]")].filter(x=>{const r=get(d,x.dataset.entry,k,cur.index);return !!r}).length;$('progressBar').style.width=(players.length?entered/players.length*100:0)+"%";$('progressText').textContent=`この位置の入力：${entered} / ${players.length}人`;renderLive()});
- });
+  const p=input.dataset.entry;
+  const row=input.closest(".player-row");
+  const rate=row.querySelector(".rate-text");
+
+  input.addEventListener("input",()=>{
+    const v=input.value.trim();
+    const n=Number(v);
+    const max=Number(input.max);
+
+    const valid=v===""||(Number.isInteger(n)&&n>=0&&n<=max);
+
+    input.classList.toggle("error",!valid);
+
+    if(!valid){
+      rate.textContent=`0〜${max}本で入力`;
+      rate.classList.add("error");
+      return;
+    }
+
+    rate.classList.remove("error");
+
+    // 入力した瞬間に保存
+    if(v===""){
+      set(d,p,k,cur.index,null);
+      row.classList.remove("done");
+      rate.textContent="未入力";
+    }else{
+      set(d,p,k,cur.index,n);
+      row.classList.add("done");
+      rate.textContent=pct(n,Number(input.max));
+    }
+
+    // 入力人数を即時更新
+    const entered=[...document.querySelectorAll("[data-entry]")]
+      .filter(x=>get(d,x.dataset.entry,k,cur.index)).length;
+
+    $("progressBar").style.width=
+      (players.length?entered/players.length*100:0)+"%";
+
+    $("progressText").textContent=
+      `この位置の入力：${entered} / ${players.length}人`;
+
+    // チーム集計を即時更新
+    renderLive();
+  });
+});
  $("progressBar").style.width=(players.length?entered/players.length*100:0)+"%";$("progressText").textContent=`この位置の入力：${entered} / ${players.length}人`;
  $("prevPos").disabled=k==="ft"||posIndex===0;$("nextPos").disabled=k==="ft"||posIndex===4;
 }
