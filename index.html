@@ -724,37 +724,66 @@ function renderInputs(){
   rate.className="rate";
   rate.textContent=r?percent(r.made,r.shots):"未入力";
 
-  function updateLive(){
-   const val=input.value.trim();
-   const existing=getRecord(date,p.id,kind,pos);
-   const max=existing?existing.shots:shotCount(kind,pos);
+    function validateInput(){
+    const val=input.value.trim();
+    const existing=getRecord(date,p.id,kind,pos);
+    const max=existing?existing.shots:shotCount(kind,pos);
 
-   if(val===""){
-    setRecord(date,p.id,kind,pos,null);
-    row.classList.remove("done");
-    rate.textContent="未入力";
-   }else{
+    if(val===""){
+      input.style.borderColor="";
+      rate.style.color="";
+      rate.textContent="未入力";
+      return true;
+    }
+
     const n=Number(val);
 
     if(!Number.isInteger(n)||n<0||n>max){
-     rate.textContent="0〜"+max+"本";
-     return;
+      input.style.borderColor="#d00";
+      rate.style.color="#d00";
+      rate.textContent="0〜"+max+"本で入力";
+      return false;
     }
 
-    setRecord(date,p.id,kind,pos,n);
-    row.classList.add("done");
-
-    const current=getRecord(date,p.id,kind,pos);
-    rate.textContent=percent(current.made,current.shots);
-   }
-
-   // 入力欄自体は作り直さず、集計だけ更新する
-   renderAll();
-   updateProgress();
+    input.style.borderColor="";
+    rate.style.color="";
+    rate.textContent="入力待ち";
+    return true;
   }
 
-  input.addEventListener("input",updateLive);
+  function updateLive(){
+    const val=input.value.trim();
+    const existing=getRecord(date,p.id,kind,pos);
+    const max=existing?existing.shots:shotCount(kind,pos);
 
+    if(val===""){
+      setRecord(date,p.id,kind,pos,null);
+      row.classList.remove("done");
+      rate.textContent="未入力";
+      input.style.borderColor="";
+      rate.style.color="";
+    }else{
+      const n=Number(val);
+
+      if(!Number.isInteger(n)||n<0||n>max){
+        validateInput();
+        return;
+      }
+
+      setRecord(date,p.id,kind,pos,n);
+      row.classList.add("done");
+      const current=getRecord(date,p.id,kind,pos);
+      rate.textContent=percent(current.made,current.shots);
+      input.style.borderColor="";
+      rate.style.color="";
+    }
+
+    renderAll();
+    updateProgress();
+  }
+
+  input.addEventListener("input",validateInput);
+  input.addEventListener("change",updateLive);
   row.append(name,input,rate);
   host.append(row);
  });
