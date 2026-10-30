@@ -1,4 +1,3 @@
-
 const CACHE_NAME = "grasshopper-shooting-v2";
 
 const APP_FILES = [
