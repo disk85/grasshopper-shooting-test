@@ -1,0 +1,1213 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="theme-color" content="#111111">
+<title>GRASSHOPPER SHOOTING TEST</title>
+
+<style>
+:root{
+ --lime:#c6f43b;
+ --black:#111;
+ --bg:#f1f2ee;
+ --white:#fff;
+ --muted:#777;
+}
+*{box-sizing:border-box}
+body{
+ margin:0;
+ background:var(--bg);
+ color:var(--black);
+ font-family:Arial,"Helvetica Neue",sans-serif;
+}
+header{
+ background:#111;
+ color:#fff;
+ padding:24px 16px 20px;
+}
+.brand{
+ display:block;
+ font-family:Impact,Haettenschweiler,"Arial Narrow Bold",sans-serif;
+ font-size:clamp(38px,10vw,64px);
+ line-height:1;
+ letter-spacing:1px;
+ font-weight:900;
+ white-space:nowrap;
+}
+.brand-grass{color:#fff}
+.brand-hopper{color:var(--lime)}
+header h1{
+ font-family:Impact,Haettenschweiler,"Arial Narrow Bold",sans-serif;
+ font-size:clamp(30px,7.5vw,46px);
+ margin:10px 0 5px;
+ line-height:1;
+ color:#fff;
+}
+header p{
+ font-size:11px;
+ color:#ccc;
+ margin:8px 0 0;
+ letter-spacing:2px;
+}
+main{
+ max-width:1100px;
+ margin:auto;
+ padding:12px;
+}
+nav{
+ display:flex;
+ gap:6px;
+ overflow-x:auto;
+ margin-bottom:12px;
+}
+nav button{
+ white-space:nowrap;
+ border:0;
+ border-radius:8px;
+ padding:12px 14px;
+ background:#ddd;
+ font-weight:bold;
+}
+nav button.active{
+ background:#111;
+ color:var(--lime);
+}
+.card{
+ background:white;
+ border-radius:13px;
+ padding:15px;
+ margin-bottom:12px;
+ box-shadow:0 2px 8px #00000008;
+}
+h2{font-size:19px;margin:0 0 14px}
+h3{font-size:15px;margin:16px 0 9px}
+label{
+ display:block;
+ color:var(--muted);
+ font-size:12px;
+ font-weight:bold;
+ margin-bottom:5px;
+}
+input,select{
+ font:inherit;
+ font-size:16px;
+ width:100%;
+ min-width:0;
+ border:1px solid #d6d8d1;
+ border-radius:8px;
+ padding:11px;
+ background:white;
+}
+button{
+ font:inherit;
+ cursor:pointer;
+ touch-action:manipulation;
+}
+button:focus-visible,input:focus-visible,select:focus-visible{
+ outline:2px solid #7c9c00;
+ outline-offset:2px;
+}
+.row{
+ display:flex;
+ gap:9px;
+ align-items:end;
+}
+.row>*{flex:1;min-width:0}
+.btn{
+ border:0;
+ border-radius:9px;
+ padding:12px 14px;
+ font-weight:bold;
+}
+.primary{background:var(--lime);color:#111}
+.secondary{background:#e9eae5;color:#111}
+.danger{background:#ffe5e5;color:#a00}
+.segment{
+ display:flex;
+ gap:6px;
+ margin:12px 0;
+}
+.segment button{
+ flex:1;
+ min-width:0;
+ padding:11px 2px;
+ border:1px solid #ddd;
+ border-radius:8px;
+ background:#f5f5f2;
+ font-size:13px;
+ font-weight:bold;
+}
+.segment button.active{
+ background:#111;
+ color:var(--lime);
+ border-color:#111;
+}
+.hidden{display:none!important}
+.small{
+ font-size:12px;
+ color:var(--muted);
+ line-height:1.6;
+}
+.position-title{
+ display:flex;
+ justify-content:space-between;
+ align-items:center;
+ gap:8px;
+}
+.position-title strong{font-size:25px}
+.progress{
+ height:6px;
+ background:#e5e6e0;
+ border-radius:8px;
+ overflow:hidden;
+ margin:9px 0 14px;
+}
+.progress div{
+ height:100%;
+ background:var(--lime);
+ width:0;
+ transition:width .15s;
+}
+.player-list{
+ display:grid;
+ gap:6px;
+}
+.player-row{
+ display:grid;
+ grid-template-columns:minmax(70px,1fr) 90px 65px;
+ gap:7px;
+ align-items:center;
+ border:1px solid #e5e5e0;
+ border-radius:9px;
+ padding:7px;
+}
+.player-row.done{
+ background:#f5f9e9;
+ border-color:#dbe9b4;
+}
+.player-name{
+ font-weight:bold;
+ overflow-wrap:anywhere;
+ font-size:14px;
+}
+.player-row input{
+ text-align:center;
+ font-weight:bold;
+ padding:10px 4px;
+}
+.rate{
+ text-align:right;
+ color:#666;
+ font-size:12px;
+ white-space:nowrap;
+}
+.stat-grid{
+ display:grid;
+ grid-template-columns:repeat(3,minmax(0,1fr));
+ gap:7px;
+}
+.stat{
+ background:#f0f2eb;
+ border-radius:9px;
+ padding:10px;
+}
+.stat span{
+ display:block;
+ color:#666;
+ font-size:11px;
+}
+.stat b{
+ display:block;
+ font-size:clamp(18px,4vw,25px);
+ margin:5px 0;
+}
+.table-wrap{
+ overflow:auto;
+ -webkit-overflow-scrolling:touch;
+}
+table{
+ width:100%;
+ border-collapse:collapse;
+ font-size:13px;
+ white-space:nowrap;
+}
+th,td{
+ padding:10px 8px;
+ border-bottom:1px solid #e5e5e0;
+ text-align:right;
+}
+th{background:#f0f1ec}
+th:first-child,td:first-child{text-align:left}
+.actions{
+ display:flex;
+ gap:7px;
+ flex-wrap:wrap;
+ margin-top:12px;
+}
+.actions button{flex:1}
+.setting-grid{
+ display:grid;
+ grid-template-columns:repeat(5,minmax(0,1fr));
+ gap:7px;
+}
+.setting-grid input{
+ text-align:center;
+ padding:9px 3px;
+}
+.pill{
+ background:#eee;
+ border-radius:20px;
+ padding:5px 9px;
+ font-size:12px;
+ font-weight:bold;
+}
+@media(min-width:760px){
+ .layout{
+  display:grid;
+  grid-template-columns:1.15fr .85fr;
+  gap:12px;
+ }
+ .layout>.card{margin-bottom:0}
+}
+@media(max-width:420px){
+ main{padding:8px}
+ .card{padding:11px}
+ header{padding:22px 12px 18px}
+ .brand{font-size:clamp(35px,10vw,44px)}
+ .player-row{
+  grid-template-columns:minmax(60px,1fr) 76px 58px;
+  gap:5px;
+  padding:6px;
+ }
+ .player-name{font-size:13px}
+ .player-row input{font-size:16px;padding:10px 2px}
+ .rate{font-size:11px}
+ .stat{padding:8px}
+ .setting-grid{gap:4px}
+ .segment button{font-size:11px}
+}
+</style>
+</head>
+
+<body>
+<header>
+  <div class="brand">
+    <span class="brand-grass">GRASS</span><span class="brand-hopper">HOPPER</span>
+  </div>
+  <h1>SHOOTING TEST</h1>
+  <p>PLAYER DEVELOPMENT / SHOT TRACKING</p>
+</header>
+
+<main>
+<nav>
+  <button class="active" data-tab="input">入力</button>
+  <button data-tab="results">結果・ランキング</button>
+  <button data-tab="settings">設定・選手</button>
+  <button data-tab="records">記録一覧</button>
+</nav>
+
+<section id="input" class="tab-content">
+<div class="layout">
+
+<div class="card">
+  <h2>SHOOTING INPUT</h2>
+
+  <div class="row">
+    <div>
+      <label>実施日</label>
+      <input id="testDate" type="date">
+    </div>
+    <div>
+      <label>種目</label>
+      <select id="kind">
+        <option value="middle">ミドル</option>
+        <option value="long">ロング</option>
+        <option value="ft">フリースロー</option>
+      </select>
+    </div>
+  </div>
+
+  <div id="positionControls" class="segment">
+    <button class="active" data-pos="0">左0°</button>
+    <button data-pos="1">左45°</button>
+    <button data-pos="2">トップ</button>
+    <button data-pos="3">右45°</button>
+    <button data-pos="4">右0°</button>
+  </div>
+
+  <div class="position-title">
+    <strong id="currentPosition">左0°</strong>
+    <span class="pill" id="shotCountLabel">10本設定</span>
+  </div>
+
+  <div class="progress"><div id="progressBar"></div></div>
+
+  <div class="position-title">
+    <h3 style="margin:0 0 9px">選手の報告を入力</h3>
+    <span id="progressText" class="small">0 / 0人入力済み</span>
+  </div>
+
+  <p class="small">
+    成功本数を入力すると自動保存・自動集計されます。
+    入力欄を空にすると、その位置の記録が削除されます。
+  </p>
+
+  <div id="inputRows" class="player-list"></div>
+
+  <div class="actions">
+    <button class="btn secondary" id="prevPos">← 前の位置</button>
+    <button class="btn primary" id="nextPos">次の位置 →</button>
+  </div>
+</div>
+
+<div class="card">
+  <h2>LIVE RESULTS</h2>
+
+  <div class="stat-grid">
+    <div class="stat">
+      <span>ミドル</span>
+      <b id="middleRate">--</b>
+      <span id="middleCount">0 / 0本</span>
+    </div>
+    <div class="stat">
+      <span>ロング</span>
+      <b id="longRate">--</b>
+      <span id="longCount">0 / 0本</span>
+    </div>
+    <div class="stat">
+      <span>総シュート</span>
+      <b id="totalRate">--</b>
+      <span id="totalCount">0 / 0本</span>
+    </div>
+  </div>
+
+  <h3>総シュートランキング</h3>
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th>順位</th><th>選手</th><th>成功</th><th>試投</th><th>率</th>
+        </tr>
+      </thead>
+      <tbody id="miniRanking"></tbody>
+    </table>
+  </div>
+</div>
+
+</div>
+</section>
+
+<section id="results" class="tab-content hidden">
+<div class="card">
+  <h2>RANKINGS</h2>
+  <div class="row">
+    <div>
+      <label>実施日</label>
+      <input id="resultDate" type="date">
+    </div>
+    <div>
+      <label>ランキング</label>
+      <select id="rankType">
+        <option value="total">総シュート</option>
+        <option value="middle">ミドル</option>
+        <option value="long">ロング</option>
+        <option value="ft">フリースロー</option>
+      </select>
+    </div>
+  </div>
+
+  <div class="table-wrap" style="margin-top:12px">
+    <table>
+      <thead>
+        <tr>
+          <th>順位</th><th>選手</th><th>成功</th><th>試投</th><th>成功率</th>
+        </tr>
+      </thead>
+      <tbody id="ranking"></tbody>
+    </table>
+  </div>
+</div>
+
+<div class="card">
+  <h2>EXCEL / CSV</h2>
+  <button class="btn primary" id="exportCsv">記録をCSV出力</button>
+</div>
+</section>
+
+<section id="settings" class="tab-content hidden">
+<div class="card">
+  <h2>SHOT SETTINGS</h2>
+
+  <h3>ミドル（位置ごと）</h3>
+  <div id="middleSettings" class="setting-grid"></div>
+
+  <h3>ロング（位置ごと）</h3>
+  <div id="longSettings" class="setting-grid"></div>
+
+  <h3>フリースロー</h3>
+  <div class="row">
+    <div>
+      <label>1回の試投数</label>
+      <input id="ftShots" type="number" min="1" max="200">
+    </div>
+    <button class="btn primary" id="saveFtShots" style="flex:0 0 auto">保存</button>
+  </div>
+
+  <button class="btn primary" id="saveShotSettings" style="margin-top:14px;width:100%">
+    ミドル・ロングの設定を保存
+  </button>
+</div>
+
+<div class="card">
+  <h2>PLAYER MANAGEMENT</h2>
+  <div class="row">
+    <div>
+      <label>選手名</label>
+      <input id="newPlayer" placeholder="選手名を入力">
+    </div>
+    <button class="btn primary" id="addPlayer" style="flex:0 0 auto">追加</button>
+  </div>
+  <div id="playerManageList" class="player-list" style="margin-top:12px"></div>
+</div>
+</section>
+
+<section id="records" class="tab-content hidden">
+<div class="card">
+  <h2>RECORDS</h2>
+
+  <div class="row">
+    <div>
+      <label>実施日</label>
+      <input id="recordDate" type="date">
+    </div>
+    <button class="btn danger" id="clearDay" style="flex:0 0 auto">当日記録を削除</button>
+  </div>
+
+  <div class="table-wrap" style="margin-top:12px">
+    <table>
+      <thead>
+        <tr>
+          <th>日付</th><th>選手</th><th>種目</th><th>位置</th>
+          <th>成功</th><th>試投</th><th>率</th><th></th>
+        </tr>
+      </thead>
+      <tbody id="recordRows"></tbody>
+    </table>
+  </div>
+
+  <div class="actions">
+    <button class="btn secondary" id="backup">バックアップ保存</button>
+    <button class="btn secondary" id="restoreBtn">バックアップ読込</button>
+    <input id="restoreFile" type="file" accept=".json,application/json" class="hidden">
+  </div>
+</div>
+</section>
+</main>
+
+<script>
+"use strict";
+
+const POSITIONS=["左0°","左45°","トップ","右45°","右0°"];
+
+const DEFAULT_NAMES=[
+ "クウト","ギンジ","アオト","アサヒ","ソラ","シドウ",
+ "コウシン","エイト","カズキ","ユウシ","リト","アキト",
+ "シュウト","キラ","ユウシン","ミナト","ケイジ","ダイト",
+ "ヒュウガ","ハルキ","ルイ"
+];
+
+const $=id=>document.getElementById(id);
+const today=()=>new Date().toLocaleDateString("sv-SE");
+
+const safeParse=(key,fallback)=>{
+ try{
+  const v=JSON.parse(localStorage.getItem(key));
+  return v??fallback;
+ }catch{
+  return fallback;
+ }
+};
+
+let players=safeParse("grass_players",null);
+
+if(!Array.isArray(players)){
+ players=DEFAULT_NAMES.map((name,i)=>({id:"p"+i,name}));
+}
+
+let records=safeParse("grass_records",{});
+
+if(!records||typeof records!=="object"||Array.isArray(records)){
+ records={};
+}
+
+let settings=safeParse("grass_shot_settings",null);
+
+if(!settings||typeof settings!=="object"){
+ settings={
+  middle:[10,10,10,10,10],
+  long:[10,10,10,10,10],
+  ft:10
+ };
+}
+
+function clamp(value,min,max,fallback){
+ const n=Number(value);
+ return Number.isFinite(n)
+  ?Math.max(min,Math.min(max,Math.floor(n)))
+  :fallback;
+}
+
+function normalizeArray(a){
+ return POSITIONS.map((_,i)=>
+  clamp(Array.isArray(a)?a[i]:10,1,200,10)
+ );
+}
+
+settings.middle=normalizeArray(settings.middle);
+settings.long=normalizeArray(settings.long);
+settings.ft=clamp(settings.ft,1,200,10);
+
+let positionIndex=0;
+
+function saveAll(){
+ try{
+  localStorage.setItem("grass_players",JSON.stringify(players));
+  localStorage.setItem("grass_records",JSON.stringify(records));
+  localStorage.setItem("grass_shot_settings",JSON.stringify(settings));
+ }catch(e){
+  console.error("保存エラー:",e);
+ }
+}
+
+function recordKey(date,player,kind,pos){
+ return [date,player,kind,pos].join("|");
+}
+
+function shotCount(kind,pos){
+ return kind==="ft"?settings.ft:settings[kind][pos];
+}
+
+function getRecord(date,player,kind,pos){
+ return records[recordKey(date,player,kind,pos)]||null;
+}
+
+function setRecord(date,player,kind,pos,made){
+ const key=recordKey(date,player,kind,pos);
+
+ if(made===null||made===""){
+  delete records[key];
+  saveAll();
+  return;
+ }
+
+ const existing=records[key];
+ const shots=existing?existing.shots:shotCount(kind,pos);
+
+ records[key]={
+  date,
+  player,
+  kind,
+  pos,
+  made:clamp(made,0,shots,0),
+  shots
+ };
+
+ saveAll();
+}
+
+function percent(made,shots){
+ return shots?((made/shots)*100).toFixed(1)+"%":"--";
+}
+
+function sum(date,player,kind){
+ let made=0,shots=0;
+ const positions=kind==="ft"?[0]:[0,1,2,3,4];
+
+ positions.forEach(pos=>{
+  const r=getRecord(date,player,kind,pos);
+  if(r){
+   made+=Number(r.made)||0;
+   shots+=Number(r.shots)||0;
+  }
+ });
+
+ return {made,shots,rate:shots?made/shots:0};
+}
+
+function totalSum(date,player){
+ const m=sum(date,player,"middle");
+ const l=sum(date,player,"long");
+ const made=m.made+l.made;
+ const shots=m.shots+l.shots;
+
+ return {made,shots,rate:shots?made/shots:0};
+}
+
+function esc(s){
+ return String(s).replace(/[&<>"']/g,c=>({
+  "&":"&amp;",
+  "<":"&lt;",
+  ">":"&gt;",
+  '"':"&quot;",
+  "'":"&#39;"
+ }[c]));
+}
+
+function renderPosition(){
+ const kind=$("kind").value;
+ $("positionControls").classList.toggle("hidden",kind==="ft");
+
+ const pos=kind==="ft"?0:positionIndex;
+
+ $("currentPosition").textContent=
+  kind==="ft"?"フリースロー":POSITIONS[pos];
+
+ $("shotCountLabel").textContent=shotCount(kind,pos)+"本設定";
+
+ document.querySelectorAll("[data-pos]").forEach(b=>{
+  b.classList.toggle("active",Number(b.dataset.pos)===positionIndex);
+ });
+
+ renderInputs();
+}
+
+function updateProgress(){
+ const date=$("testDate").value;
+ const kind=$("kind").value;
+ const pos=kind==="ft"?0:positionIndex;
+
+ const entered=players.filter(p=>
+  getRecord(date,p.id,kind,pos)
+ ).length;
+
+ $("progressText").textContent=
+  entered+" / "+players.length+"人入力済み";
+
+ $("progressBar").style.width=
+  (players.length?entered/players.length*100:0)+"%";
+}
+
+// 確定ボタンなし。入力のたびに保存・集計する
+function renderInputs(){
+ const date=$("testDate").value;
+ const kind=$("kind").value;
+ const pos=kind==="ft"?0:positionIndex;
+ const host=$("inputRows");
+
+ host.innerHTML="";
+
+ players.forEach(p=>{
+  const r=getRecord(date,p.id,kind,pos);
+
+  const row=document.createElement("div");
+  row.className="player-row"+(r?" done":"");
+
+  const name=document.createElement("div");
+  name.className="player-name";
+  name.textContent=p.name;
+
+  const input=document.createElement("input");
+  input.type="number";
+  input.min="0";
+  input.max=r?r.shots:shotCount(kind,pos);
+  input.inputMode="numeric";
+  input.placeholder="成功本数";
+  input.setAttribute("aria-label",p.name+"の成功本数");
+  input.value=r?String(r.made):"";
+
+  const rate=document.createElement("div");
+  rate.className="rate";
+  rate.textContent=r?percent(r.made,r.shots):"未入力";
+
+  function updateLive(){
+   const val=input.value.trim();
+   const existing=getRecord(date,p.id,kind,pos);
+   const max=existing?existing.shots:shotCount(kind,pos);
+
+   if(val===""){
+    setRecord(date,p.id,kind,pos,null);
+    row.classList.remove("done");
+    rate.textContent="未入力";
+   }else{
+    const n=Number(val);
+
+    if(!Number.isInteger(n)||n<0||n>max){
+     rate.textContent="0〜"+max+"本";
+     return;
+    }
+
+    setRecord(date,p.id,kind,pos,n);
+    row.classList.add("done");
+
+    const current=getRecord(date,p.id,kind,pos);
+    rate.textContent=percent(current.made,current.shots);
+   }
+
+   // 入力欄自体は作り直さず、集計だけ更新する
+   renderAll();
+   updateProgress();
+  }
+
+  input.addEventListener("input",updateLive);
+
+  row.append(name,input,rate);
+  host.append(row);
+ });
+
+ updateProgress();
+}
+
+function ranking(date,type){
+ return players.map(p=>{
+  const t=type==="total"
+   ?totalSum(date,p.id)
+   :sum(date,p.id,type);
+
+  return {id:p.id,name:p.name,...t};
+ })
+ .filter(x=>x.shots>0)
+ .sort((a,b)=>
+  b.rate-a.rate||
+  b.made-a.made||
+  a.name.localeCompare(b.name,"ja")
+ );
+}
+
+function renderRanking(target,date,type){
+ const arr=ranking(date,type);
+ let previous=null,rank=0;
+
+ $(target).innerHTML=arr.map((x,i)=>{
+  if(previous===null||Math.abs(x.rate-previous)>1e-10){
+   rank=i+1;
+  }
+
+  previous=x.rate;
+
+  return `<tr>
+   <td>${rank}</td>
+   <td>${esc(x.name)}</td>
+   <td>${x.made}</td>
+   <td>${x.shots}</td>
+   <td><b>${percent(x.made,x.shots)}</b></td>
+  </tr>`;
+ }).join("")||
+ '<tr><td colspan="5">まだ記録がありません</td></tr>';
+}
+
+function renderAll(){
+ const date=$("testDate").value;
+
+ const m=players.reduce((a,p)=>{
+  const t=sum(date,p.id,"middle");
+  a.made+=t.made;
+  a.shots+=t.shots;
+  return a;
+ },{made:0,shots:0});
+
+ const l=players.reduce((a,p)=>{
+  const t=sum(date,p.id,"long");
+  a.made+=t.made;
+  a.shots+=t.shots;
+  return a;
+ },{made:0,shots:0});
+
+ $("middleRate").textContent=percent(m.made,m.shots);
+ $("middleCount").textContent=`${m.made} / ${m.shots}本`;
+
+ $("longRate").textContent=percent(l.made,l.shots);
+ $("longCount").textContent=`${l.made} / ${l.shots}本`;
+
+ $("totalRate").textContent=
+  percent(m.made+l.made,m.shots+l.shots);
+
+ $("totalCount").textContent=
+  `${m.made+l.made} / ${m.shots+l.shots}本`;
+
+ renderRanking("miniRanking",date,"total");
+ renderRanking("ranking",$("resultDate").value,$("rankType").value);
+
+ renderPlayers();
+ renderRecords();
+}
+
+function renderSettings(){
+ ["middle","long"].forEach(kind=>{
+  $(kind+"Settings").innerHTML=POSITIONS.map((pos,i)=>`
+   <div>
+    <label>${pos}</label>
+    <input type="number" min="1" max="200"
+     data-setting="${kind}"
+     data-index="${i}"
+     value="${settings[kind][i]}">
+   </div>
+  `).join("");
+ });
+
+ $("ftShots").value=settings.ft;
+}
+
+function savePositionSettings(){
+ for(const input of document.querySelectorAll("[data-setting]")){
+  const kind=input.dataset.setting;
+  const i=Number(input.dataset.index);
+  const n=Number(input.value);
+
+  if(!Number.isInteger(n)||n<1||n>200){
+   alert("試投数は1〜200本で設定してください。");
+   input.focus();
+   return;
+  }
+
+  settings[kind][i]=n;
+ }
+
+ saveAll();
+ renderSettings();
+ renderPosition();
+ renderAll();
+
+ alert("試投数の設定を保存しました。");
+}
+
+function renderPlayers(){
+ $("playerManageList").innerHTML=players.map(p=>`
+  <div class="player-row">
+   <input aria-label="選手名"
+    data-player-name="${esc(p.id)}"
+    value="${esc(p.name)}">
+   <button class="btn secondary"
+    data-rename="${esc(p.id)}">名前変更</button>
+   <button class="btn danger"
+    data-delete="${esc(p.id)}">削除</button>
+  </div>
+ `).join("");
+
+ document.querySelectorAll("[data-rename]").forEach(b=>{
+  b.onclick=()=>{
+   const p=players.find(x=>x.id===b.dataset.rename);
+   if(!p)return;
+
+   const input=[...document.querySelectorAll("[data-player-name]")]
+    .find(x=>x.dataset.playerName===p.id);
+
+   const name=input?.value.trim();
+
+   if(!name){
+    alert("選手名を入力してください");
+    return;
+   }
+
+   p.name=name;
+   saveAll();
+   renderAll();
+   renderPosition();
+  };
+ });
+
+ document.querySelectorAll("[data-delete]").forEach(b=>{
+  b.onclick=()=>{
+   const p=players.find(x=>x.id===b.dataset.delete);
+
+   if(!p||!confirm(p.name+"とその記録を削除しますか？")){
+    return;
+   }
+
+   players=players.filter(x=>x.id!==p.id);
+
+   Object.keys(records).forEach(k=>{
+    if(records[k].player===p.id)delete records[k];
+   });
+
+   saveAll();
+   renderAll();
+   renderPosition();
+  };
+ });
+}
+
+function renderRecords(){
+ const date=$("recordDate").value;
+
+ const arr=Object.values(records)
+  .filter(r=>r.date===date)
+  .sort((a,b)=>
+   a.player.localeCompare(b.player)||
+   a.kind.localeCompare(b.kind)||
+   a.pos-b.pos
+  );
+
+ $("recordRows").innerHTML=arr.map(r=>{
+  const p=players.find(x=>x.id===r.player);
+
+  const kindName={
+   middle:"ミドル",
+   long:"ロング",
+   ft:"フリースロー"
+  }[r.kind]||r.kind;
+
+  const posName=r.kind==="ft"
+   ?"基本"
+   :(POSITIONS[r.pos]||"不明");
+
+  return `<tr>
+   <td>${esc(r.date)}</td>
+   <td>${esc(p?p.name:"削除済み")}</td>
+   <td>${kindName}</td>
+   <td>${posName}</td>
+   <td>${r.made}</td>
+   <td>${r.shots}</td>
+   <td>${percent(r.made,r.shots)}</td>
+   <td>
+    <button class="btn danger"
+     data-record-delete="${esc(recordKey(r.date,r.player,r.kind,r.pos))}">
+     削除
+    </button>
+   </td>
+  </tr>`;
+ }).join("")||
+ '<tr><td colspan="8">この日の記録はありません</td></tr>';
+
+ document.querySelectorAll("[data-record-delete]").forEach(b=>{
+  b.onclick=()=>{
+   if(confirm("この記録を削除しますか？")){
+    delete records[b.dataset.recordDelete];
+    saveAll();
+    renderAll();
+    renderPosition();
+   }
+  };
+ });
+}
+
+function download(blob,name){
+ const url=URL.createObjectURL(blob);
+ const a=document.createElement("a");
+
+ a.href=url;
+ a.download=name;
+ document.body.appendChild(a);
+ a.click();
+ a.remove();
+
+ setTimeout(()=>URL.revokeObjectURL(url),1000);
+}
+
+function exportCsv(){
+ const rows=[["日付","選手名","種目","位置","成功本数","試投数","成功率"]];
+
+ Object.values(records)
+  .sort((a,b)=>
+   a.date.localeCompare(b.date)||
+   a.player.localeCompare(b.player)
+  )
+  .forEach(r=>{
+   const p=players.find(x=>x.id===r.player);
+
+   rows.push([
+    r.date,
+    p?p.name:"削除済み",
+    ({middle:"ミドル",long:"ロング",ft:"フリースロー"})[r.kind],
+    r.kind==="ft"?"基本":POSITIONS[r.pos],
+    r.made,
+    r.shots,
+    (r.made/r.shots*100).toFixed(1)+"%"
+   ]);
+  });
+
+ const csv="\uFEFF"+rows.map(row=>
+  row.map(v=>'"'+String(v).replace(/"/g,'""')+'"').join(",")
+ ).join("\r\n");
+
+ download(
+  new Blob([csv],{type:"text/csv;charset=utf-8;"}),
+  "GRASSHOPPER_shooting_"+today()+".csv"
+ );
+}
+
+// タブ切り替え
+document.querySelectorAll("nav button").forEach(b=>{
+ b.onclick=()=>{
+  document.querySelectorAll("nav button").forEach(x=>
+   x.classList.toggle("active",x===b)
+  );
+
+  document.querySelectorAll(".tab-content").forEach(x=>
+   x.classList.toggle("hidden",x.id!==b.dataset.tab)
+  );
+
+  renderAll();
+
+  if(b.dataset.tab==="input"){
+   renderPosition();
+  }
+ };
+});
+
+// シュート位置切り替え
+document.querySelectorAll("[data-pos]").forEach(b=>{
+ b.onclick=()=>{
+  positionIndex=Number(b.dataset.pos);
+  renderPosition();
+ };
+});
+
+$("kind").onchange=()=>{
+ renderPosition();
+ renderAll();
+};
+
+$("testDate").onchange=()=>{
+ renderPosition();
+ renderAll();
+};
+
+$("resultDate").onchange=renderAll;
+$("recordDate").onchange=renderRecords;
+$("rankType").onchange=renderAll;
+
+$("prevPos").onclick=()=>{
+ positionIndex=Math.max(0,positionIndex-1);
+ renderPosition();
+};
+
+$("nextPos").onclick=()=>{
+ positionIndex=Math.min(4,positionIndex+1);
+ renderPosition();
+};
+
+$("saveShotSettings").onclick=savePositionSettings;
+
+$("saveFtShots").onclick=()=>{
+ const n=Number($("ftShots").value);
+
+ if(!Number.isInteger(n)||n<1||n>200){
+  alert("試投数は1〜200本で設定してください。");
+  return;
+ }
+
+ settings.ft=n;
+ saveAll();
+ renderSettings();
+ renderPosition();
+ renderAll();
+
+ alert("フリースローの試投数を保存しました。");
+};
+
+// 選手追加
+$("addPlayer").onclick=()=>{
+ const name=$("newPlayer").value.trim();
+
+ if(!name){
+  alert("選手名を入力してください。");
+  return;
+ }
+
+ if(players.some(p=>p.name===name)){
+  alert("同じ名前が登録されています。");
+  return;
+ }
+
+ players.push({
+  id:"p"+Date.now()+Math.random().toString(36).slice(2,6),
+  name
+ });
+
+ $("newPlayer").value="";
+ saveAll();
+ renderAll();
+ renderPosition();
+};
+
+// 当日記録削除
+$("clearDay").onclick=()=>{
+ const date=$("recordDate").value;
+
+ if(!confirm(date+"の記録をすべて削除しますか？")){
+  return;
+ }
+
+ Object.keys(records).forEach(k=>{
+  if(records[k].date===date)delete records[k];
+ });
+
+ saveAll();
+ renderAll();
+ renderPosition();
+};
+
+// CSV出力
+$("exportCsv").onclick=exportCsv;
+
+// バックアップ保存
+$("backup").onclick=()=>{
+ download(
+  new Blob(
+   [JSON.stringify({players,records,settings},null,2)],
+   {type:"application/json"}
+  ),
+  "GRASSHOPPER_backup_"+today()+".json"
+ );
+};
+
+// バックアップ読み込み
+$("restoreBtn").onclick=()=>$("restoreFile").click();
+
+$("restoreFile").onchange=async e=>{
+ const file=e.target.files[0];
+ if(!file)return;
+
+ try{
+  const data=JSON.parse(await file.text());
+
+  if(
+   !Array.isArray(data.players)||
+   !data.records||
+   typeof data.records!=="object"||
+   Array.isArray(data.records)
+  ){
+   throw Error("Invalid backup");
+  }
+
+  if(!confirm("現在の選手・記録・設定をバックアップの内容に置き換えますか？")){
+   return;
+  }
+
+  players=data.players;
+  records=data.records;
+
+  if(data.settings){
+   settings=data.settings;
+  }
+
+  settings.middle=normalizeArray(settings.middle);
+  settings.long=normalizeArray(settings.long);
+  settings.ft=clamp(settings.ft,1,200,10);
+
+  saveAll();
+  renderSettings();
+  renderPosition();
+  renderAll();
+
+  alert("バックアップを読み込みました。");
+ }catch{
+  alert("バックアップファイルを読み込めませんでした。");
+ }finally{
+  e.target.value="";
+ }
+};
+
+// 初期表示
+$("testDate").value=today();
+$("resultDate").value=today();
+$("recordDate").value=today();
+
+renderSettings();
+renderPosition();
+renderAll();
+</script>
+</body>
+</html>
