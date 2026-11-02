@@ -41,6 +41,23 @@ canvas{width:100%;height:230px;background:#09161c;border:1px solid #263e49;borde
 .player-select{display:flex;gap:8px;align-items:center}.player-select select{flex:1}.error{border-color:var(--red)!important;color:var(--red)!important}
 .date-list{display:grid;gap:8px}.date-item{display:flex;align-items:center;gap:8px;background:#0b181e;border:1px solid #263d48;border-radius:9px;padding:10px}.date-item .date-info{flex:1}.date-item strong{display:block}.date-item small{color:var(--muted)}
 @media(min-width:700px){.stat-grid{grid-template-columns:repeat(4,minmax(0,1fr))}.player-inputs{grid-template-columns:repeat(2,minmax(0,1fr))}}
+
+.result-switch{display:flex;gap:6px;overflow-x:auto;margin:12px 0}
+.result-switch button{flex:1;min-width:max-content;background:#1a2d37;color:#dce8ed;border:1px solid #38505c;border-radius:8px;padding:10px 12px;font-size:12px;font-weight:bold}
+.result-switch button.active{background:var(--lime);color:#10170a;border-color:var(--lime)}
+.result-table{min-width:980px}
+.result-table th,.result-table td{text-align:center;padding:9px 7px}
+.result-table th:first-child,.result-table td:first-child{text-align:left;position:sticky;left:0;background:#102029;z-index:1}
+.result-rank-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;margin-top:12px}
+.result-rank-card{background:#0a171d;border:1px solid #29434f;border-radius:10px;padding:12px}
+.result-rank-card h3{margin:0 0 8px;color:var(--lime)}
+.result-rank-row{display:grid;grid-template-columns:28px 1fr auto;gap:8px;padding:7px 0;border-bottom:1px solid #20343d;align-items:center}
+.result-rank-row:last-child{border-bottom:0}
+.result-rank-row b:first-child{color:var(--gold)}
+.result-rank-row strong{color:var(--lime)}
+@media(max-width:650px){.result-rank-grid{grid-template-columns:1fr}}
+@media print{.result-switch,#exportDay{display:none}.result-table{min-width:0;font-size:9px}.result-table th,.result-table td{padding:4px 3px}.result-table th:first-child,.result-table td:first-child{position:static}}
+
 </style>
 </head>
 <body>
@@ -55,7 +72,7 @@ canvas{width:100%;height:230px;background:#09161c;border:1px solid #263e49;borde
 <main>
 <section id="input" class="tab active">
  <div class="card">
-  <div class="row"><div><label class="small">実施日</label><input type="date" id="testDate"></div><div><label class="small">種目</label><select id="kind"><option value="middle">ミドル</option><option value="long">ロング</option><option value="ft">フリースロー</option></select></div></div>
+  <div class="row"><div><label class="small">実施日</label><input type="date" id="testDate"></div><div><label class="small">種目</label><select id="kind"><option value="middle">ミドル</option><option value="long">ロング</option><option value="ft">フリースロー</option></select></div></div><div style="margin-top:10px"><label class="small" for="testLocation">実施場所</label><input type="text" id="testLocation" maxlength="80" placeholder="例：富士川体育館"></div>
   <div class="position-strip" id="positionStrip"></div>
   <h2 id="positionTitle">ミドル・左0°</h2><span class="small" id="positionCount"></span>
   <div class="progress"><div id="progressBar"></div></div><div class="small" id="progressText"></div>
@@ -73,16 +90,18 @@ canvas{width:100%;height:230px;background:#09161c;border:1px solid #263e49;borde
 </section>
 <section id="results" class="tab">
  <div class="card"><h2>実施日を選択</h2><div id="resultsCalendar"></div></div>
- <div class="card"><div class="row"><h2 style="margin:0">TEAM RESULT</h2><span class="date-label" id="resultsDateLabel"></span></div><p class="small">チーム全員の成功本数 ÷ チーム全員の試投数</p>
-  <div class="stat-grid">
-   <div class="stat"><label>ミドル成功率</label><strong id="teamMiddle">--</strong><small id="teamMiddleCount"></small></div>
-   <div class="stat"><label>ロング成功率</label><strong id="teamLong">--</strong><small id="teamLongCount"></small></div>
-   <div class="stat"><label>トータル成功率</label><strong id="teamTotal">--</strong><small id="teamTotalCount"></small></div>
-   <div class="stat"><label>フリースロー成功率</label><strong id="teamFt">--</strong><small id="teamFtCount"></small></div>
-  </div><p class="small" id="previousCompare"></p>
- </div>
- <div class="card"><div class="row"><h2 style="margin:0">個人ランキング</h2><select id="rankType"><option value="total">トータル</option><option value="middle">ミドル</option><option value="long">ロング</option><option value="ft">フリースロー</option></select></div>
-  <div class="table-wrap"><table><thead><tr><th>順位</th><th>選手</th><th>成功本数</th><th>試投数</th><th>成功率</th></tr></thead><tbody id="ranking"></tbody></table></div>
+ <div class="card">
+  <div class="row"><h2 style="margin:0">SHOOT TEST</h2><span class="date-label" id="resultsDateLabel"></span></div>
+  <p class="small" id="resultsLocationLabel">場所：未登録</p>
+  <div class="result-switch">
+   <button class="active" data-result-view="middle">ミドル</button>
+   <button data-result-view="long">ロング</button>
+   <button data-result-view="total">トータル</button>
+   <button data-result-view="ranking">ランキング</button>
+  </div>
+  <div id="resultTableWrap" class="table-wrap"></div>
+  <div id="resultRankWrap" hidden></div>
+  <p class="small" id="previousCompare"></p>
   <button class="btn primary wide" id="exportDay">選択日のCSVを出力</button>
  </div>
 </section>
@@ -110,45 +129,26 @@ canvas{width:100%;height:230px;background:#09161c;border:1px solid #263e49;borde
 const $=id=>document.getElementById(id);
 const POS=["右0°","右45°","トップ","左45°","左0°"];
 const DEFAULT_NAMES=["クウト","ギンジ","アオト","アサヒ","ソラ","シドウ","コウシン","エイト","カズキ","ユウシ","リト","アキト","シュウト","キラ","ユウシン","ミナト","ケイジ","ダイト","ヒュウガ","ハルキ","ルイ"];
-const KEY_PLAYERS="grass_players_v2",KEY_RECORDS="grass_records_v2",KEY_SETTINGS="grass_shot_settings_v2";
+const KEY_PLAYERS="grass_players_v2",KEY_RECORDS="grass_records_v2",KEY_SETTINGS="grass_shot_settings_v2",KEY_LOCATIONS="grass_test_locations_v1";
 function readJSON(key,fallback){try{const v=JSON.parse(localStorage.getItem(key));return v??fallback}catch{return fallback}}
 const oldPlayers=readJSON("grass_players",null);
 let players=readJSON(KEY_PLAYERS,null);
 if(!Array.isArray(players)||!players.length)players=(Array.isArray(oldPlayers)&&oldPlayers.length?oldPlayers:DEFAULT_NAMES.map((name,i)=>({id:"p"+(i+1),name}))).map((p,i)=>({id:String(p.id||"p"+(i+1)),name:String(p.name||"選手"+(i+1))}));
 let records=readJSON(KEY_RECORDS,{});
+let locations=readJSON(KEY_LOCATIONS,{});
+if(!locations||typeof locations!=="object"||Array.isArray(locations))locations={};
 if(!records||typeof records!=="object"||Array.isArray(records))records={};
 let settings=readJSON(KEY_SETTINGS,null)||{middle:[10,10,10,10,10],long:[10,10,10,10,10],ft:10};
 const validShot=n=>Number.isInteger(n)&&n>=1&&n<=200;
 settings.middle=Array.from({length:5},(_,i)=>validShot(Number(settings.middle?.[i]))?Number(settings.middle[i]):10);
 settings.long=Array.from({length:5},(_,i)=>validShot(Number(settings.long?.[i]))?Number(settings.long[i]):10);
 settings.ft=validShot(Number(settings.ft))?Number(settings.ft):10;
-let posIndex=0,selectedResultDate="",selectedRecordDate="",pendingDelete=null;
+let posIndex=0,selectedResultDate="",selectedRecordDate="",pendingDelete=null,resultView="middle";
 const today=()=>{const d=new Date();return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}`};
 const esc=s=>String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
 const recordKey=(d,p,k,i)=>`${d}|${p}|${k}|${i}`;
 function get(d,p,k,i){return records[recordKey(d,p,k,i)]||null}
-function saveAll(){localStorage.setItem(KEY_PLAYERS,JSON.stringify(players));localStorage.setItem(KEY_RECORDS,JSON.stringify(records));localStorage.setItem(KEY_SETTINGS,JSON.stringify(settings))}
-// 旧順（左0°→左45°→トップ→右45°→右0°）で保存された位置番号を、新順に一度だけ変換する。
-function migratePositionOrder(){
- const migrationKey="grass_position_order_right_first_v1";
- if(localStorage.getItem(migrationKey)==="done")return;
- const oldToNew=[4,3,2,1,0];
- for(const kind of ["middle","long"]){settings[kind]=oldToNew.map(oldIndex=>settings[kind][oldIndex]);}
- const migrated={};
- for(const [key,record] of Object.entries(records)){
-  const parts=key.split("|");
-  const kind=parts[2],oldIndex=Number(parts[3]);
-  if((kind==="middle"||kind==="long")&&Number.isInteger(oldIndex)&&oldIndex>=0&&oldIndex<5){
-   const newIndex=oldToNew[oldIndex];
-   record.pos=newIndex;
-   migrated[recordKey(parts[0],parts[1],kind,newIndex)]=record;
-  }else migrated[key]=record;
- }
- records=migrated;
- localStorage.setItem(migrationKey,"done");
- saveAll();
-}
-migratePositionOrder();
+function saveAll(){localStorage.setItem(KEY_PLAYERS,JSON.stringify(players));localStorage.setItem(KEY_RECORDS,JSON.stringify(records));localStorage.setItem(KEY_SETTINGS,JSON.stringify(settings));localStorage.setItem(KEY_LOCATIONS,JSON.stringify(locations))}
 function saveEntry(d,p,k,i,value){
  const ky=recordKey(d,p,k,i);
  if(value===null){delete records[ky]}
@@ -198,13 +198,49 @@ function renderCalendar(target,selected){
  el.querySelector("[data-next]").onclick=()=>{const n=new Date(y,m+1,1);renderCalendar(target,`${n.getFullYear()}-${String(n.getMonth()+1).padStart(2,"0")}-01`)};
  el.querySelectorAll("[data-day]").forEach(b=>b.onclick=()=>{if(ds.includes(b.dataset.day)){if(target==="resultsCalendar"){selectedResultDate=b.dataset.day;renderResults()}else{selectedRecordDate=b.dataset.day;renderRecords()}}});
 }
+function resultPositionCells(d,p,k){
+ return POS.map((_,i)=>{const r=get(d,p.id,k,i);return r?Number(r.made):"—"});
+}
+function renderResultTable(d,view){
+ const wrap=$("resultTableWrap"),rankWrap=$("resultRankWrap");
+ rankWrap.hidden=true;wrap.hidden=false;
+ if(!d){wrap.innerHTML='<p class="small">この日の記録がありません。</p>';return}
+ let headers="",rows="";
+ if(view==="middle"||view==="long"){
+  const k=view;
+  headers=`<thead><tr><th>選手</th>${POS.map(x=>`<th>${esc(x)}</th>`).join("")}<th>成功数</th><th>試投数</th><th>成功率</th></tr></thead>`;
+  rows=players.map(p=>{const x=sum(d,p.id,k);if(!x.shots)return "";return `<tr><td>${esc(p.name)}</td>${resultPositionCells(d,p,k).map(v=>`<td>${v}</td>`).join("")}<td>${x.made}</td><td>${x.shots}</td><td class="rate">${pct(x.made,x.shots)}</td></tr>`}).join("");
+ }else{
+  headers="<thead><tr><th>選手</th><th>ミドル成功</th><th>ミドル試投</th><th>ミドル率</th><th>ロング成功</th><th>ロング試投</th><th>ロング率</th><th>合計成功</th><th>合計試投</th><th>トータル率</th><th>FT成功</th><th>FT試投</th><th>FT率</th></tr></thead>";
+  rows=players.map(p=>{const m=sum(d,p.id,"middle"),l=sum(d,p.id,"long"),f=sum(d,p.id,"ft"),t=total(d,p.id);if(!m.shots&&!l.shots&&!f.shots)return "";return `<tr><td>${esc(p.name)}</td><td>${m.shots?m.made:"—"}</td><td>${m.shots||"—"}</td><td class="rate">${pct(m.made,m.shots)}</td><td>${l.shots?l.made:"—"}</td><td>${l.shots||"—"}</td><td class="rate">${pct(l.made,l.shots)}</td><td>${t.shots?t.made:"—"}</td><td>${t.shots||"—"}</td><td class="rate">${pct(t.made,t.shots)}</td><td>${f.shots?f.made:"—"}</td><td>${f.shots||"—"}</td><td class="rate">${pct(f.made,f.shots)}</td></tr>`}).join("");
+ }
+ wrap.innerHTML=`<table class="result-table">${headers}<tbody>${rows||'<tr><td colspan="14">この日の記録がありません</td></tr>'}</tbody></table>`;
+}
+function rankingGroups(d,key){
+ const list=players.map(p=>({p,x:metric(d,p.id,key)})).filter(o=>o.x.shots).sort((a,b)=>(b.x.made/b.x.shots)-(a.x.made/a.x.shots));
+ let last=null,rank=0;
+ return list.map((o,i)=>{const r=o.x.made/o.x.shots;if(last===null||Math.abs(r-last)>1e-10){rank=i+1;last=r}return {...o,rank,rate:pct(o.x.made,o.x.shots)}});
+}
+function renderResultRanks(d){
+ const wrap=$("resultRankWrap"),table=$("resultTableWrap");
+ table.hidden=true;wrap.hidden=false;
+ if(!d){wrap.innerHTML='<p class="small">この日の記録がありません。</p>';return}
+ const specs=[["ミドル確率 BEST 5","middle"],["ロング確率 BEST 5","long"],["トータル確率 BEST 5","total"],["フリースロー BEST 5","ft"]];
+ wrap.innerHTML=`<div class="result-rank-grid">${specs.map(([title,key])=>{
+  const list=rankingGroups(d,key).filter(x=>x.rank<=5);
+  return `<div class="result-rank-card"><h3>${title}</h3>${list.length?list.map(x=>`<div class="result-rank-row"><b>${x.rank}</b><span>${esc(x.p.name)}</span><strong>${x.rate}</strong></div>`).join(""):'<p class="small">記録なし</p>'}</div>`;
+ }).join("")}</div>`;
+}
 function renderResults(){
  const ds=dates();if(!selectedResultDate||!ds.includes(selectedResultDate))selectedResultDate=ds[ds.length-1]||"";
- renderCalendar("resultsCalendar",selectedResultDate);$("resultsDateLabel").textContent=selectedResultDate||"記録なし";
- ["middle","long","total","ft"].forEach((t)=>{const id=t[0].toUpperCase()+t.slice(1),a=aggregate(selectedResultDate,t);$("team"+id).textContent=pct(a.made,a.shots);$("team"+id+"Count").textContent=`${a.made} / ${a.shots}本`});
- const prev=ds.filter(d=>d<selectedResultDate).pop();if(prev){const a=aggregate(selectedResultDate,"total"),b=aggregate(prev,"total"),diff=a.shots&&b.shots?((a.made/a.shots-b.made/b.shots)*100).toFixed(1):null;$("previousCompare").textContent=diff===null?`前回（${prev}）との比較：データ不足`:`前回（${prev}）との比較：トータル ${Number(diff)>0?"+":""}${diff}ポイント`}else $("previousCompare").textContent="前回比較は、記録が増えると表示されます。";
- const type=$("rankType").value,rows=players.map(p=>({p,x:metric(selectedResultDate,p.id,type)})).filter(o=>o.x.shots).sort((a,b)=>b.x.made/b.x.shots-a.x.made/a.x.shots);let last=null,rank=0;
- $("ranking").innerHTML=rows.map((o,i)=>{const rate=o.x.made/o.x.shots;if(last===null||rate!==last){rank=i+1;last=rate}return `<tr><td class="rank">${rank}位</td><td>${esc(o.p.name)}</td><td>${o.x.made}</td><td>${o.x.shots}</td><td class="rate">${pct(o.x.made,o.x.shots)}</td></tr>`}).join("")||'<tr><td colspan="5">選択日の記録がありません</td></tr>';
+ renderCalendar("resultsCalendar",selectedResultDate||today());
+ $("resultsDateLabel").textContent=selectedResultDate||"記録なし";
+ $("resultsLocationLabel").textContent="場所："+(locations[selectedResultDate]||"未登録");
+ document.querySelectorAll("[data-result-view]").forEach(b=>b.classList.toggle("active",b.dataset.resultView===resultView));
+ if(resultView==="ranking")renderResultRanks(selectedResultDate);else renderResultTable(selectedResultDate,resultView);
+ const prev=ds.filter(d=>d<selectedResultDate).pop();
+ if(prev){const a=aggregate(selectedResultDate,"total"),b=aggregate(prev,"total"),diff=a.shots&&b.shots?((a.made/a.shots-b.made/b.shots)*100).toFixed(1):null;$("previousCompare").textContent=diff===null?`前回（${prev}）との比較：データ不足`:`前回（${prev}）との比較：トータル ${Number(diff)>0?"+":""}${diff}ポイント`}
+ else $("previousCompare").textContent="前回比較は、記録が増えると表示されます。";
  $("exportDay").disabled=!selectedResultDate;
 }
 function renderIndividual(){
@@ -254,17 +290,36 @@ function renderSettings(){
 function renderAll(){renderLive();renderResults();renderIndividual();renderRecords();renderSettings()}
 function csvCell(v){return '"'+String(v??"").replace(/"/g,'""')+'"'}
 function dailyCsv(d){
- const head=["実施日","選手名","ミドル試投数","ミドル合計成功本数","ミドル合計成功率",...POS.map(p=>"ミドル_"+p+"_成功本数"),"ロング試投数","ロング合計成功本数","ロング合計成功率",...POS.map(p=>"ロング_"+p+"_成功本数"),"フリースロー試投数","フリースロー成功本数","フリースロー成功率"],rows=[head];
- players.forEach(p=>{const m=sum(d,p.id,"middle"),l=sum(d,p.id,"long"),f=sum(d,p.id,"ft");rows.push([d,p.name,m.shots,m.made,pct(m.made,m.shots),...POS.map((_,i)=>get(d,p.id,"middle",i)?.made??""),l.shots,l.made,pct(l.made,l.shots),...POS.map((_,i)=>get(d,p.id,"long",i)?.made??""),f.shots,f.made,pct(f.made,f.shots)])});
+ const rows=[],push=r=>rows.push(r);
+ push(["SHOOT TEST"]);
+ push(["日付",d,"場所",locations[d]||"未登録"]);
+ push([]);
+ push(["選手","ミドル","","","","","","","","ロング","","","","","","","","","フリースロー","","","トータル","",""]);
+ push(["","右0","右45","トップ","左45","左0","成功数","試投数","成功率","右0","右45","トップ","左45","左0","成功数","試投数","成功率","成功数","試投数","成功率","成功数","試投数","成功率"]);
+ players.forEach(p=>{
+  const m=sum(d,p.id,"middle"),l=sum(d,p.id,"long"),f=sum(d,p.id,"ft"),t=total(d,p.id);
+  const mpos=POS.map((_,i)=>get(d,p.id,"middle",i)?.made??"");
+  const lpos=POS.map((_,i)=>get(d,p.id,"long",i)?.made??"");
+  if(!m.shots&&!l.shots&&!f.shots)return;
+  push([p.name,...mpos,m.made||"",m.shots||"",pct(m.made,m.shots),...lpos,l.made||"",l.shots||"",pct(l.made,l.shots),f.made||"",f.shots||"",pct(f.made,f.shots),t.made||"",t.shots||"",pct(t.made,t.shots)]);
+ });
+ for(const [title,key] of [["ミドル確率 BEST 5","middle"],["ロング確率 BEST 5","long"],["トータル確率 BEST 5","total"],["フリースロー確率 BEST 5","ft"]]){
+  push([]);push([title]);push(["順位","選手","成功率"]);
+  rankingGroups(d,key).filter(x=>x.rank<=5).forEach(x=>push([x.rank,x.p.name,x.rate]));
+ }
  return new Blob(["\uFEFF"+rows.map(r=>r.map(csvCell).join(",")).join("\r\n")],{type:"text/csv;charset=utf-8"});
 }
 function downloadDaily(d){const a=document.createElement("a"),url=URL.createObjectURL(dailyCsv(d));a.href=url;a.download=`GRASSHOPPER_${d}.csv`;document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),3000)}
 document.querySelectorAll("nav [data-tab]").forEach(b=>b.onclick=()=>{document.querySelectorAll("nav button").forEach(x=>x.classList.toggle("active",x===b));document.querySelectorAll(".tab").forEach(x=>x.classList.toggle("active",x.id===b.dataset.tab));renderAll();if(b.dataset.tab==="input")renderPosition()});
 $("kind").onchange=()=>{posIndex=0;renderPosition()};
-$("testDate").value=today();$("testDate").onchange=()=>{renderPosition();renderLive()};
+$("testDate").value=today();
+$("testLocation").value=locations[today()]||"";
+$("testLocation").onchange=()=>{const d=$("testDate").value;if(!d)return;const v=$("testLocation").value.trim();if(v)locations[d]=v;else delete locations[d];saveAll();if(selectedResultDate===d)renderResults()};
+$("testDate").onchange=()=>{$("testLocation").value=locations[$("testDate").value]||"";renderPosition();renderLive()};
 $("prevPos").onclick=()=>{if(posIndex>0)posIndex--;renderPosition()};
 $("nextPos").onclick=()=>{if(posIndex<4)posIndex++;renderPosition();$("playerInputs").querySelector("input")?.focus()};
-$("rankType").onchange=renderResults;$("individualPlayer").onchange=renderIndividual;
+document.querySelectorAll("[data-result-view]").forEach(b=>b.onclick=()=>{resultView=b.dataset.resultView;renderResults()});
+$("individualPlayer").onchange=renderIndividual;
 $("exportDay").onclick=()=>{if(selectedResultDate)downloadDaily(selectedResultDate)};
 $("endTest").onclick=()=>{const d=$("testDate").value;if(!d)return alert("実施日を選択してください");if(!dates().includes(d))return alert("この日の入力記録がありません");downloadDaily(d)};
 $("addPlayer").onclick=()=>{const name=$("newPlayer").value.trim();if(!name)return alert("選手名を入力してください");if(players.some(p=>p.name===name))return alert("同じ名前が登録されています");players.push({id:"p"+Date.now(),name});$("newPlayer").value="";saveAll();renderAll();renderPosition()};
