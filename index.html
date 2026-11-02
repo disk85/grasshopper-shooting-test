@@ -13,7 +13,7 @@
 :root{--bg:#071116;--panel:#101e25;--panel2:#142630;--line:#29404b;--text:#f4f8fa;--muted:#9db0ba;--lime:#b8f33b;--blue:#48b9e8;--gold:#ffd34e;--purple:#c39bff;--red:#ff7777}
 *{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--text);font-family:Arial,"Noto Sans JP",sans-serif}
 header{padding:17px 16px 12px;background:#050c10;border-bottom:1px solid var(--line)}
-.brand{font-family:Impact,Haettenschweiler,"Arial Narrow Bold",sans-serif;font-size:32px;font-style:italic;letter-spacing:.5px}.brand span{color:var(--lime)}header small{display:block;color:#d0d9de;font-size:9px;letter-spacing:2px;margin-top:2px}
+.brand{font-family:Impact,Haettenschweiler,"Arial Narrow Bold",sans-serif;font-size:clamp(30px,7vw,42px);font-style:italic;font-weight:900;letter-spacing:1px;line-height:.95;text-transform:uppercase;text-shadow:2px 2px 0 #000}.brand .grass{color:#fff}.brand .hopper{color:var(--lime);margin-left:7px}.brand-sub{font-family:Impact,Haettenschweiler,"Arial Narrow Bold",sans-serif;font-size:clamp(22px,5vw,30px);font-style:italic;font-weight:900;letter-spacing:3px;color:#fff;line-height:1.05;margin-top:5px}header small{display:block;color:#d0d9de;font-size:9px;letter-spacing:2.5px;margin-top:8px}
 nav{display:flex;overflow-x:auto;gap:4px;padding:8px;background:#0b171d;position:sticky;top:0;z-index:5;border-bottom:1px solid var(--line)}
 nav button{flex:1;min-width:max-content;border:0;background:transparent;color:#b6c4cb;padding:12px 10px;font-weight:bold;border-bottom:3px solid transparent}
 nav button.active{color:#fff;border-color:var(--lime)}
@@ -44,7 +44,7 @@ canvas{width:100%;height:230px;background:#09161c;border:1px solid #263e49;borde
 </style>
 </head>
 <body>
-<header><div class="brand">GRASS<span>HOPPER</span></div><small>ALL IN · PLAYER DEVELOPMENT</small></header>
+<header><div class="brand"><span class="grass">GRASS</span><span class="hopper">HOPPER</span></div><div class="brand-sub">SHOOTING TEST</div><small>ALL IN · PLAYER DEVELOPMENT</small></header>
 <nav>
 <button class="active" data-tab="input">データ入力</button>
 <button data-tab="results">結果・ランキング</button>
@@ -87,170 +87,4 @@ canvas{width:100%;height:230px;background:#09161c;border:1px solid #263e49;borde
  </div>
 </section>
 <section id="individual" class="tab">
- <div class="card"><h2>PLAYER DEVELOPMENT</h2><select id="individualPlayer"></select><div id="individualProfile" class="small" style="margin-top:8px"></div></div>
- <div class="card"><h2>成長推移</h2><p class="small">実施日ごとの成功率。凡例の色と項目名を対応させています。</p>
-  <div class="legend-row"><span class="legend-item"><i class="swatch" style="background:#b8f33b"></i>トータル</span><span class="legend-item"><i class="swatch" style="background:#48b9e8"></i>ミドル</span><span class="legend-item"><i class="swatch" style="background:#ffd34e"></i>ロング</span></div>
-  <canvas id="growthChart" width="900" height="320"></canvas><p class="small">縦軸：成功率（％）／横軸：実施日</p>
- </div>
- <div class="card"><h2>過去の記録</h2><div class="table-wrap" id="individualHistory"></div></div>
-</section>
-<section id="records" class="tab">
- <div class="card"><h2>実施日一覧</h2><p class="small">日付ごとの記録を確認できます。削除すると、その日の全選手・全種目・全位置の記録が端末から削除されます。削除前に確認します。</p><div id="dateList" class="date-list"></div></div>
- <div class="card"><h2>選択日の記録</h2><div class="row"><input type="date" id="recordDate"><button class="btn secondary fixed" id="showRecordDate">表示</button></div><div class="table-wrap" id="recordsTable" style="margin-top:10px"></div><button class="btn danger wide" id="deleteSelectedDate">この日のデータを削除</button></div>
-</section>
-<section id="settings" class="tab">
- <div class="card"><h2>選手管理</h2><div class="row"><input id="newPlayer" placeholder="選手名を入力"><button class="btn primary fixed" id="addPlayer">追加</button></div><div id="playerManage" style="margin-top:12px"></div></div>
- <div class="card"><h2>試投数の設定</h2><p class="small">各位置ごとに設定できます。初期値は10本です。</p><div id="shotSettings"></div><label class="small">フリースロー</label><input id="ftSetting" type="number" min="1" max="200"><button class="btn primary wide" id="saveSettings">設定を保存</button></div>
- <div class="card"><h2>データについて</h2><p class="small">このアプリの記録は、使用中の端末・ブラウザ内に保存されます。端末変更やブラウザデータ消去に備え、定期的にCSVを保存してください。</p></div>
-</section>
-</main>
-<div id="confirmModal" class="modal-bg hidden"><div class="modal"><h2 id="modalTitle">確認</h2><div id="modalText" class="small"></div><div class="actions"><button class="btn secondary" id="modalCancel">キャンセル</button><button class="btn danger" id="modalConfirm">削除する</button></div></div></div>
-<script>
-"use strict";
-const $=id=>document.getElementById(id);
-const POS=["左0°","左45°","トップ","右45°","右0°"];
-const DEFAULT_NAMES=["クウト","ギンジ","アオト","アサヒ","ソラ","シドウ","コウシン","エイト","カズキ","ユウシ","リト","アキト","シュウト","キラ","ユウシン","ミナト","ケイジ","ダイト","ヒュウガ","ハルキ","ルイ"];
-const KEY_PLAYERS="grass_players_v2",KEY_RECORDS="grass_records_v2",KEY_SETTINGS="grass_shot_settings_v2";
-function readJSON(key,fallback){try{const v=JSON.parse(localStorage.getItem(key));return v??fallback}catch{return fallback}}
-const oldPlayers=readJSON("grass_players",null);
-let players=readJSON(KEY_PLAYERS,null);
-if(!Array.isArray(players)||!players.length)players=(Array.isArray(oldPlayers)&&oldPlayers.length?oldPlayers:DEFAULT_NAMES.map((name,i)=>({id:"p"+(i+1),name}))).map((p,i)=>({id:String(p.id||"p"+(i+1)),name:String(p.name||"選手"+(i+1))}));
-let records=readJSON(KEY_RECORDS,{});
-if(!records||typeof records!=="object"||Array.isArray(records))records={};
-let settings=readJSON(KEY_SETTINGS,null)||{middle:[10,10,10,10,10],long:[10,10,10,10,10],ft:10};
-const validShot=n=>Number.isInteger(n)&&n>=1&&n<=200;
-settings.middle=Array.from({length:5},(_,i)=>validShot(Number(settings.middle?.[i]))?Number(settings.middle[i]):10);
-settings.long=Array.from({length:5},(_,i)=>validShot(Number(settings.long?.[i]))?Number(settings.long[i]):10);
-settings.ft=validShot(Number(settings.ft))?Number(settings.ft):10;
-let posIndex=0,selectedResultDate="",selectedRecordDate="",pendingDelete=null;
-const today=()=>{const d=new Date();return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}`};
-const esc=s=>String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
-const recordKey=(d,p,k,i)=>`${d}|${p}|${k}|${i}`;
-function get(d,p,k,i){return records[recordKey(d,p,k,i)]||null}
-function saveAll(){localStorage.setItem(KEY_PLAYERS,JSON.stringify(players));localStorage.setItem(KEY_RECORDS,JSON.stringify(records));localStorage.setItem(KEY_SETTINGS,JSON.stringify(settings))}
-function saveEntry(d,p,k,i,value){
- const ky=recordKey(d,p,k,i);
- if(value===null){delete records[ky]}
- else{
-  const prior=records[ky],shots=prior?.shots??(k==="ft"?settings.ft:settings[k][i]);
-  records[ky]={date:d,player:p,kind:k,pos:i,made:value,shots};
- }
- saveAll();
-}
-function shotCount(k,i){return k==="ft"?settings.ft:settings[k][i]}
-function sum(d,p,k){let made=0,shots=0;for(let i=0;i<(k==="ft"?1:5);i++){const r=get(d,p,k,i);if(r){made+=Number(r.made)||0;shots+=Number(r.shots)||0}}return {made,shots}}
-function total(d,p){const m=sum(d,p,"middle"),l=sum(d,p,"long");return {made:m.made+l.made,shots:m.shots+l.shots}}
-function pct(m,s){return s?`${(m/s*100).toFixed(1)}%`:"--"}
-function dates(){return [...new Set(Object.values(records).filter(r=>r&&r.date).map(r=>r.date))].sort()}
-function metric(d,p,t){return t==="middle"?sum(d,p,"middle"):t==="long"?sum(d,p,"long"):t==="ft"?sum(d,p,"ft"):total(d,p)}
-function aggregate(d,t){return players.reduce((a,p)=>{const x=metric(d,p.id,t);a.made+=x.made;a.shots+=x.shots;return a},{made:0,shots:0})}
-function currentPosition(){const k=$("kind").value;return k==="ft"?{kind:k,index:0,label:"フリースロー"}:{kind:k,index:posIndex,label:(k==="middle"?"ミドル":"ロング")+"・"+POS[posIndex]}}
-function renderPosition(){
- const k=$("kind").value,labels=k==="ft"?["フリースロー"]:POS;
- if(k==="ft")posIndex=0;
- $("positionStrip").innerHTML=labels.map((p,i)=>`<button class="${i===posIndex?"active":""}" data-pos="${i}">${p}</button>`).join("");
- $("positionStrip").querySelectorAll("[data-pos]").forEach(b=>b.addEventListener("click",()=>{posIndex=Number(b.dataset.pos);renderPosition()}));
- const cur=currentPosition(),d=$("testDate").value,shots=shotCount(k,cur.index);
- $("positionTitle").textContent=cur.label;$("positionCount").textContent=`${shots}本設定`;
- $("playerInputs").innerHTML=players.map(p=>{const r=get(d,p.id,k,cur.index);return `<div class="player-row ${r?"done":""}" data-player-row="${esc(p.id)}"><div><b>${esc(p.name)}</b></div><input type="number" inputmode="numeric" min="0" max="${r?.shots??shots}" step="1" placeholder="成功本数" data-entry="${esc(p.id)}" value="${r?Number(r.made):""}"><div class="rate-text">${r?pct(r.made,r.shots):"未入力"}</div></div>`}).join("")||'<p class="small">選手を登録してください。</p>';
- $("playerInputs").querySelectorAll("[data-entry]").forEach(input=>{
-  input.addEventListener("input",()=>{
-   const p=input.dataset.entry,v=input.value.trim(),n=Number(v),max=Number(input.max);
-   const row=input.closest(".player-row"),rate=row.querySelector(".rate-text");
-   if(v==="" ){saveEntry(d,p,k,cur.index,null);row.classList.remove("done");rate.textContent="未入力";input.classList.remove("error")}
-   else if(Number.isInteger(n)&&n>=0&&n<=max){
-    saveEntry(d,p,k,cur.index,n);row.classList.add("done");rate.textContent=pct(n,max);input.classList.remove("error");
-   }else{input.classList.add("error");rate.textContent=`0〜${max}本`;return}
-   updateProgress(d,k,cur.index);renderLive();$("saveStatus").textContent="保存済み · "+new Date().toLocaleTimeString("ja-JP");
-  });
- });
- updateProgress(d,k,cur.index);
- $("prevPos").disabled=k==="ft"||posIndex===0;$("nextPos").disabled=k==="ft"||posIndex===4;
-}
-function updateProgress(d,k,i){const entered=players.filter(p=>!!get(d,p.id,k,i)).length;$("progressBar").style.width=(players.length?entered/players.length*100:0)+"%";$("progressText").textContent=`この位置の入力：${entered} / ${players.length}人`}
-function renderLive(){const d=$("testDate").value;for(const [t,id] of [["middle","Middle"],["long","Long"],["ft","Ft"]]){const a=aggregate(d,t);$("live"+id).textContent=pct(a.made,a.shots);$("live"+id+"Count").textContent=`${a.made} / ${a.shots}本`}const t=aggregate(d,"total");$("liveTotal").textContent=pct(t.made,t.shots);$("liveTotalCount").textContent=`${t.made} / ${t.shots}本`}
-function renderCalendar(target,selected){
- const el=$(target),ds=dates(),base=selected||ds[ds.length-1]||today(),dt=new Date(base+"T12:00:00"),y=dt.getFullYear(),m=dt.getMonth(),first=new Date(y,m,1),start=new Date(y,m,1-first.getDay()),cells=[];
- for(let i=0;i<42;i++){const d=new Date(start);d.setDate(start.getDate()+i);const iso=`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}`;cells.push({iso,day:d.getDate(),other:d.getMonth()!==m,has:ds.includes(iso)})}
- el.innerHTML=`<div class="calendar-head"><button data-prev>‹</button><b>${y}年${m+1}月</b><button data-next>›</button></div><div class="calendar">${["日","月","火","水","木","金","土"].map(x=>`<div class="weekday">${x}</div>`).join("")}${cells.map(c=>`<button class="day ${c.other?"other":""} ${c.has?"has-record":""} ${c.iso===selected?"selected":""}" data-day="${c.iso}">${c.day}</button>`).join("")}</div><div class="legend"><span><i class="dot" style="background:var(--lime)"></i>記録あり</span><span>選択日</span></div>`;
- el.querySelector("[data-prev]").onclick=()=>{const n=new Date(y,m-1,1);renderCalendar(target,`${n.getFullYear()}-${String(n.getMonth()+1).padStart(2,"0")}-01`)};
- el.querySelector("[data-next]").onclick=()=>{const n=new Date(y,m+1,1);renderCalendar(target,`${n.getFullYear()}-${String(n.getMonth()+1).padStart(2,"0")}-01`)};
- el.querySelectorAll("[data-day]").forEach(b=>b.onclick=()=>{if(ds.includes(b.dataset.day)){if(target==="resultsCalendar"){selectedResultDate=b.dataset.day;renderResults()}else{selectedRecordDate=b.dataset.day;$("recordDate").value=selectedRecordDate;renderRecords()}}});
-}
-function renderResults(){
- const ds=dates();if(!selectedResultDate||!ds.includes(selectedResultDate))selectedResultDate=ds[ds.length-1]||"";
- renderCalendar("resultsCalendar",selectedResultDate);$("resultsDateLabel").textContent=selectedResultDate||"記録なし";
- ["middle","long","total","ft"].forEach((t)=>{const id=t[0].toUpperCase()+t.slice(1),a=aggregate(selectedResultDate,t);$("team"+id).textContent=pct(a.made,a.shots);$("team"+id+"Count").textContent=`${a.made} / ${a.shots}本`});
- const prev=ds.filter(d=>d<selectedResultDate).pop();if(prev){const a=aggregate(selectedResultDate,"total"),b=aggregate(prev,"total"),diff=a.shots&&b.shots?((a.made/a.shots-b.made/b.shots)*100).toFixed(1):null;$("previousCompare").textContent=diff===null?`前回（${prev}）との比較：データ不足`:`前回（${prev}）との比較：トータル ${Number(diff)>0?"+":""}${diff}ポイント`}else $("previousCompare").textContent="前回比較は、記録が増えると表示されます。";
- const type=$("rankType").value,rows=players.map(p=>({p,x:metric(selectedResultDate,p.id,type)})).filter(o=>o.x.shots).sort((a,b)=>b.x.made/b.x.shots-a.x.made/a.x.shots);let last=null,rank=0;
- $("ranking").innerHTML=rows.map((o,i)=>{const rate=o.x.made/o.x.shots;if(last===null||rate!==last){rank=i+1;last=rate}return `<tr><td class="rank">${rank}位</td><td>${esc(o.p.name)}</td><td>${o.x.made}</td><td>${o.x.shots}</td><td class="rate">${pct(o.x.made,o.x.shots)}</td></tr>`}).join("")||'<tr><td colspan="5">選択日の記録がありません</td></tr>';
- $("exportDay").disabled=!selectedResultDate;
-}
-function renderIndividual(){
- const sel=$("individualPlayer"),current=sel.value;sel.innerHTML=players.map(p=>`<option value="${esc(p.id)}">${esc(p.name)}</option>`).join("");if(players.some(p=>p.id===current))sel.value=current;
- const p=players.find(x=>x.id===sel.value)||players[0];if(!p){$("individualProfile").textContent="選手を登録してください。";$("individualHistory").innerHTML="";drawChart([]);return}
- const ds=dates().filter(d=>["middle","long","ft"].some(k=>sum(d,p.id,k).shots));$("individualProfile").textContent=`${p.name} · テスト実施 ${ds.length}回`;
- const rows=ds.slice().reverse().map(d=>{const t=total(d,p.id),m=sum(d,p.id,"middle"),l=sum(d,p.id,"long"),f=sum(d,p.id,"ft");return `<tr><td>${d}</td><td>${pct(t.made,t.shots)}</td><td>${pct(m.made,m.shots)}</td><td>${pct(l.made,l.shots)}</td><td>${pct(f.made,f.shots)}</td></tr>`}).join("");
- $("individualHistory").innerHTML=rows?`<table><thead><tr><th>実施日</th><th>トータル</th><th>ミドル</th><th>ロング</th><th>FT</th></tr></thead><tbody>${rows}</tbody></table>`:'<p class="small">まだ記録がありません。</p>';
- drawChart(ds.map(d=>({date:d,total:total(d,p.id),middle:sum(d,p.id,"middle"),long:sum(d,p.id,"long")})));
-}
-function drawChart(data){
- const c=$("growthChart"),ctx=c.getContext("2d"),w=c.width,h=c.height;ctx.clearRect(0,0,w,h);ctx.strokeStyle="#29404b";ctx.fillStyle="#9db0ba";ctx.font="16px Arial";
- for(let v=0;v<=100;v+=20){const y=h-38-v/100*(h-75);ctx.beginPath();ctx.moveTo(48,y);ctx.lineTo(w-18,y);ctx.stroke();ctx.fillText(v+"%",5,y+5)}
- const series=[["total","#b8f33b"],["middle","#48b9e8"],["long","#ffd34e"]];
- series.forEach(([k,color])=>{ctx.strokeStyle=color;ctx.fillStyle=color;ctx.lineWidth=3;ctx.beginPath();let started=false;data.forEach((d,i)=>{const x=data.length<2?w/2:48+i*(w-80)/(data.length-1),v=d[k].shots?d[k].made/d[k].shots*100:null;if(v===null)return;const y=h-38-v/100*(h-75);if(!started){ctx.moveTo(x,y);started=true}else ctx.lineTo(x,y);ctx.fillRect(x-4,y-4,8,8)});if(started)ctx.stroke()});
- ctx.fillStyle="#c6d3d9";ctx.font="14px Arial";data.forEach((d,i)=>{const x=data.length<2?w/2:48+i*(w-80)/(data.length-1);ctx.fillText(d.date.slice(5).replace("-","/"),x-22,h-9)});
- if(!data.length){ctx.fillStyle="#9db0ba";ctx.font="18px Arial";ctx.fillText("記録がありません",w/2-70,h/2)}
-}
-function renderRecords(){
- const ds=dates();if(!selectedRecordDate||!ds.includes(selectedRecordDate))selectedRecordDate=ds[ds.length-1]||"";
- $("dateList").innerHTML=ds.slice().reverse().map(d=>`<div class="date-item"><div class="date-info"><strong>${d}</strong><small>${Object.values(records).filter(r=>r?.date===d).length}件の入力記録</small></div><button class="btn secondary" data-open-date="${d}">表示</button><button class="btn danger" data-delete-date="${d}">削除</button></div>`).join("")||'<p class="small">まだ記録がありません。</p>';
- $("dateList").querySelectorAll("[data-open-date]").forEach(b=>b.onclick=()=>{selectedRecordDate=b.dataset.openDate;$("recordDate").value=selectedRecordDate;renderRecords()});
- $("dateList").querySelectorAll("[data-delete-date]").forEach(b=>b.onclick=()=>askDelete(b.dataset.deleteDate));
- $("recordDate").value=selectedRecordDate||$("recordDate").value||today();
- if(!selectedRecordDate){$("recordsTable").innerHTML='<p class="small">記録がありません。</p>';$("deleteSelectedDate").disabled=true;return}
- const body=players.map(p=>{const t=total(selectedRecordDate,p.id),m=sum(selectedRecordDate,p.id,"middle"),l=sum(selectedRecordDate,p.id,"long"),f=sum(selectedRecordDate,p.id,"ft");if(!t.shots&&!m.shots&&!l.shots&&!f.shots)return "";return `<tr><td>${esc(p.name)}</td><td>${pct(t.made,t.shots)}</td><td>${pct(m.made,m.shots)}</td><td>${pct(l.made,l.shots)}</td><td>${pct(f.made,f.shots)}</td></tr>`}).join("");
- $("recordsTable").innerHTML=body?`<table><thead><tr><th>選手</th><th>トータル</th><th>ミドル</th><th>ロング</th><th>FT</th></tr></thead><tbody>${body}</tbody></table>`:'<p class="small">この日の記録がありません。</p>';
- $("deleteSelectedDate").disabled=!ds.includes(selectedRecordDate);
-}
-function askDelete(d){
- if(!d)return;pendingDelete=d;$("modalTitle").textContent="日別データの削除";$("modalText").textContent=`${d} の全選手・全種目・全位置の記録を削除します。この操作は取り消せません。削除前にCSVを保存することをおすすめします。`;$("confirmModal").classList.remove("hidden");
-}
-function deleteDate(d){
- Object.keys(records).forEach(k=>{if(records[k]?.date===d)delete records[k]});saveAll();
- if(selectedResultDate===d)selectedResultDate="";if(selectedRecordDate===d)selectedRecordDate="";
- $("confirmModal").classList.add("hidden");pendingDelete=null;renderAll();
-}
-function renderSettings(){
- $("playerManage").innerHTML=players.map(p=>`<div class="row" style="margin:6px 0"><input data-name="${esc(p.id)}" value="${esc(p.name)}"><button class="btn secondary fixed" data-rename="${esc(p.id)}">変更</button><button class="btn danger fixed" data-delete-player="${esc(p.id)}">削除</button></div>`).join("");
- $("playerManage").querySelectorAll("[data-rename]").forEach(b=>b.onclick=()=>{const p=players.find(x=>x.id===b.dataset.rename),el=$("playerManage").querySelector(`[data-name="${CSS.escape(p.id)}"]`),v=el.value.trim();if(!v)return alert("選手名を入力してください");p.name=v;saveAll();renderAll()});
- $("playerManage").querySelectorAll("[data-delete-player]").forEach(b=>b.onclick=()=>{const p=players.find(x=>x.id===b.dataset.deletePlayer);if(!p||!confirm(p.name+"を選手一覧から削除しますか？過去の記録データは残ります。"))return;players=players.filter(x=>x.id!==p.id);saveAll();renderAll()});
- $("shotSettings").innerHTML=["middle","long"].map(k=>`<h3>${k==="middle"?"ミドル":"ロング"}</h3><div class="row">${POS.map((p,i)=>`<div><label class="small">${p}</label><input type="number" min="1" max="200" data-shot="${k}" data-index="${i}" value="${settings[k][i]}"></div>`).join("")}</div>`).join("");$("ftSetting").value=settings.ft;
-}
-function renderAll(){renderLive();renderResults();renderIndividual();renderRecords();renderSettings()}
-function csvCell(v){return '"'+String(v??"").replace(/"/g,'""')+'"'}
-function dailyCsv(d){
- const head=["実施日","選手名","ミドル試投数","ミドル合計成功本数","ミドル合計成功率",...POS.map(p=>"ミドル_"+p+"_成功本数"),"ロング試投数","ロング合計成功本数","ロング合計成功率",...POS.map(p=>"ロング_"+p+"_成功本数"),"フリースロー試投数","フリースロー成功本数","フリースロー成功率"],rows=[head];
- players.forEach(p=>{const m=sum(d,p.id,"middle"),l=sum(d,p.id,"long"),f=sum(d,p.id,"ft");rows.push([d,p.name,m.shots,m.made,pct(m.made,m.shots),...POS.map((_,i)=>get(d,p.id,"middle",i)?.made??""),l.shots,l.made,pct(l.made,l.shots),...POS.map((_,i)=>get(d,p.id,"long",i)?.made??""),f.shots,f.made,pct(f.made,f.shots)])});
- return new Blob(["\uFEFF"+rows.map(r=>r.map(csvCell).join(",")).join("\r\n")],{type:"text/csv;charset=utf-8"});
-}
-function downloadDaily(d){const a=document.createElement("a"),url=URL.createObjectURL(dailyCsv(d));a.href=url;a.download=`GRASSHOPPER_${d}.csv`;document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),3000)}
-document.querySelectorAll("nav [data-tab]").forEach(b=>b.onclick=()=>{document.querySelectorAll("nav button").forEach(x=>x.classList.toggle("active",x===b));document.querySelectorAll(".tab").forEach(x=>x.classList.toggle("active",x.id===b.dataset.tab));renderAll();if(b.dataset.tab==="input")renderPosition()});
-$("kind").onchange=()=>{posIndex=0;renderPosition()};
-$("testDate").value=today();$("testDate").onchange=()=>{renderPosition();renderLive()};
-$("prevPos").onclick=()=>{if(posIndex>0)posIndex--;renderPosition()};
-$("nextPos").onclick=()=>{if(posIndex<4)posIndex++;renderPosition();$("playerInputs").querySelector("input")?.focus()};
-$("rankType").onchange=renderResults;$("individualPlayer").onchange=renderIndividual;
-$("exportDay").onclick=()=>{if(selectedResultDate)downloadDaily(selectedResultDate)};
-$("endTest").onclick=()=>{const d=$("testDate").value;if(!d)return alert("実施日を選択してください");if(!dates().includes(d))return alert("この日の入力記録がありません");downloadDaily(d)};
-$("addPlayer").onclick=()=>{const name=$("newPlayer").value.trim();if(!name)return alert("選手名を入力してください");if(players.some(p=>p.name===name))return alert("同じ名前が登録されています");players.push({id:"p"+Date.now(),name});$("newPlayer").value="";saveAll();renderAll();renderPosition()};
-$("saveSettings").onclick=()=>{for(const x of document.querySelectorAll("[data-shot]")){const n=Number(x.value);if(!validShot(n))return alert("試投数は1〜200本で設定してください");settings[x.dataset.shot][Number(x.dataset.index)]=n}const ft=Number($("ftSetting").value);if(!validShot(ft))return alert("フリースローは1〜200本で設定してください");settings.ft=ft;saveAll();renderPosition();alert("設定を保存しました")};
-$("showRecordDate").onclick=()=>{selectedRecordDate=$("recordDate").value;renderRecords()};
-$("deleteSelectedDate").onclick=()=>askDelete(selectedRecordDate);
-$("modalCancel").onclick=()=>{$("confirmModal").classList.add("hidden");pendingDelete=null};
-$("modalConfirm").onclick=()=>{if(pendingDelete)deleteDate(pendingDelete)};
-saveAll();$("testDate").value=today();$("recordDate").value=today();renderAll();renderPosition();
-if("serviceWorker"in navigator)window.addEventListener("load",()=>navigator.serviceWorker.register("./sw.js").catch(()=>{}));
-</script>
-</body>
-</html>
+ <div class="card"><h2>PLAYER DEVELOPMENT</h2><select id="individualPla
