@@ -166,7 +166,18 @@ function dates(){return [...new Set(Object.values(records).filter(r=>r&&r.date).
 function metric(d,p,t){return t==="middle"?sum(d,p,"middle"):t==="long"?sum(d,p,"long"):t==="ft"?sum(d,p,"ft"):total(d,p)}
 function aggregate(d,t){return players.reduce((a,p)=>{const x=metric(d,p.id,t);a.made+=x.made;a.shots+=x.shots;return a},{made:0,shots:0})}
 function currentPosition(){const k=$("kind").value;return k==="ft"?{kind:k,index:0,label:"フリースロー"}:{kind:k,index:posIndex,label:(k==="middle"?"ミドル":"ロング")+"・"+POS[posIndex]}}
+let activePlayerInputIndex=0;
+function focusNextPlayer(){
+ const inputs=[...$("playerInputs").querySelectorAll("[data-entry]")];
+ const nextIndex=activePlayerInputIndex+1;
+ if(nextIndex>=inputs.length)return;
+ activePlayerInputIndex=nextIndex;
+ const next=inputs[nextIndex];
+ next.scrollIntoView({behavior:"smooth",block:"center"});
+ setTimeout(()=>next.focus({preventScroll:true}),180);
+}
 function renderPosition(){
+ activePlayerInputIndex=0;
  const k=$("kind").value,labels=k==="ft"?["フリースロー"]:POS;
  if(k==="ft")posIndex=0;
  $("positionStrip").innerHTML=labels.map((p,i)=>`<button class="${i===posIndex?"active":""}" data-pos="${i}">${p}</button>`).join("");
@@ -174,7 +185,15 @@ function renderPosition(){
  const cur=currentPosition(),d=$("testDate").value,shots=shotCount(k,cur.index);
  $("positionTitle").textContent=cur.label;$("positionCount").textContent=`${shots}本設定`;
  $("playerInputs").innerHTML=players.map(p=>{const r=get(d,p.id,k,cur.index);return `<div class="player-row ${r?"done":""}" data-player-row="${esc(p.id)}"><div><b>${esc(p.name)}</b></div><input type="number" inputmode="numeric" min="0" max="${r?.shots??shots}" step="1" placeholder="成功本数" data-entry="${esc(p.id)}" value="${r?Number(r.made):""}"><div class="rate-text">${r?pct(r.made,r.shots):"未入力"}</div></div>`}).join("")||'<p class="small">選手を登録してください。</p>';
- $("playerInputs").querySelectorAll("[data-entry]").forEach(input=>{
+ const entryInputs=[...$("playerInputs").querySelectorAll("[data-entry]")];
+ entryInputs.forEach((input,index)=>{
+  input.addEventListener("focus",()=>{
+   activePlayerInputIndex=index;
+   $("nextPlayer").textContent=index>=entryInputs.length-1?"最後の選手です":"次の選手へ ✓";
+  });
+  input.addEventListener("keydown",event=>{
+   if(event.key==="Enter"){event.preventDefault();focusNextPlayer()}
+  });
   input.addEventListener("input",()=>{
    const p=input.dataset.entry,v=input.value.trim(),n=Number(v),max=Number(input.max);
    const row=input.closest(".player-row"),rate=row.querySelector(".rate-text");
@@ -186,6 +205,9 @@ function renderPosition(){
   });
  });
  updateProgress(d,k,cur.index);
+ $("nextPlayer").disabled=entryInputs.length<2;
+ $("nextPlayer").textContent=entryInputs.length>1&&activePlayerInputIndex>=entryInputs.length-1?"最後の選手です":"次の選手へ ✓";
+ $("nextPlayer").onclick=focusNextPlayer;
  $("prevPos").disabled=k==="ft"||posIndex===0;$("nextPos").disabled=k==="ft"||posIndex===4;
 }
 function updateProgress(d,k,i){const entered=players.filter(p=>!!get(d,p.id,k,i)).length;$("progressBar").style.width=(players.length?entered/players.length*100:0)+"%";$("progressText").textContent=`この位置の入力：${entered} / ${players.length}人`}
