@@ -58,6 +58,27 @@ canvas{width:100%;height:230px;background:#09161c;border:1px solid #263e49;borde
 @media(max-width:650px){.result-rank-grid{grid-template-columns:1fr}}
 @media print{.result-switch,#exportDay{display:none}.result-table{min-width:0;font-size:9px}.result-table th,.result-table td{padding:4px 3px}.result-table th:first-child,.result-table td:first-child{position:static}}
 
+
+.group-counts{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:7px;margin:12px 0}
+.group-counts>div{background:#0a171d;border:1px solid #29434f;border-radius:10px;padding:10px;text-align:center}
+.group-counts b{display:block;color:var(--lime);font-size:12px;letter-spacing:1px}
+.group-counts strong{display:block;font-size:25px;margin:3px 0}
+.group-counts small{font-size:9px;color:var(--muted);letter-spacing:1px}
+.group-roster{display:grid;gap:7px}
+.group-player{display:flex;align-items:center;gap:8px;background:#0b181e;border:1px solid #263d48;border-radius:9px;padding:8px}
+.group-player-name{flex:1;font-weight:bold}
+.group-assign{display:flex;gap:5px}
+.group-assign button{min-width:42px;border:1px solid #405762;border-radius:7px;background:#1a2d37;color:#dce8ed;padding:9px 10px;font-weight:bold}
+.group-assign button.active-a{background:var(--lime);color:#10170a;border-color:var(--lime)}
+.group-assign button.active-b{background:var(--blue);color:#071116;border-color:var(--blue)}
+.group-toolbar{display:flex;align-items:center;gap:8px;justify-content:space-between;margin-bottom:12px}
+.group-name{font-size:23px;font-weight:900;color:var(--lime);letter-spacing:1px}
+.group-toggle{display:flex;gap:4px}
+.group-toggle button{width:42px;height:40px;border:1px solid #405762;border-radius:8px;background:#1a2d37;color:#fff;font-weight:900}
+.group-toggle button.active[data-group="A"]{background:var(--lime);color:#10170a;border-color:var(--lime)}
+.group-toggle button.active[data-group="B"]{background:var(--blue);color:#071116;border-color:var(--blue)}
+@media(min-width:700px){.group-roster{grid-template-columns:repeat(2,minmax(0,1fr))}}
+
 </style>
 </head>
 <body>
@@ -72,7 +93,27 @@ canvas{width:100%;height:230px;background:#09161c;border:1px solid #263e49;borde
 <main>
 <section id="input" class="tab active">
  <div class="card">
-  <div class="row"><div><label class="small">実施日</label><input type="date" id="testDate"></div><div><label class="small">種目</label><select id="kind"><option value="middle">ミドル</option><option value="long">ロング</option><option value="ft">フリースロー</option></select></div></div><div style="margin-top:10px"><label class="small" for="testLocation">実施場所</label><input type="text" id="testLocation" maxlength="80" placeholder="例：富士川体育館"></div>
+  <div class="row"><div><label class="small">実施日</label><input type="date" id="testDate"></div><div><label class="small">種目</label><select id="kind"><option value="middle">ミドル</option><option value="long">ロング</option><option value="ft">フリースロー</option></select></div></div>
+  <div style="margin-top:10px"><label class="small" for="testLocation">実施場所</label><input type="text" id="testLocation" maxlength="80" placeholder="例：富士川体育館"></div>
+ </div>
+ <div class="card" id="groupSetup">
+  <h2>01 · GROUP SETUP</h2>
+  <p class="small">今日の参加選手をAリング・Bリングに振り分けてください。選手をタップするとグループを割り当てられます。グループ分けは実施日ごとに保存されます。</p>
+  <div class="group-counts">
+   <div><b>A RING</b><strong id="countA">0</strong><small>PLAYERS</small></div>
+   <div><b>B RING</b><strong id="countB">0</strong><small>PLAYERS</small></div>
+   <div><b>未設定</b><strong id="countNone">0</strong><small>PLAYERS</small></div>
+  </div>
+  <div id="groupRoster" class="group-roster"></div>
+  <div class="actions"><button class="btn primary" id="startA">A RING から入力開始</button><button class="btn secondary" id="startB">B RING から入力開始</button></div>
+  <p class="small" id="groupSetupStatus">A/Bどちらかに選手を振り分けてください。</p>
+ </div>
+ <div class="card hidden" id="groupInput">
+  <div class="group-toolbar">
+   <div><small class="small">CURRENT GROUP</small><div class="group-name" id="currentGroupName">A RING</div></div>
+   <div class="group-toggle"><button type="button" data-group="A" class="active">A</button><button type="button" data-group="B">B</button></div>
+   <button type="button" class="btn secondary" id="editGroups">編成変更</button>
+  </div>
   <div class="position-strip" id="positionStrip"></div>
   <h2 id="positionTitle">ミドル・左0°</h2><span class="small" id="positionCount"></span>
   <div class="progress"><div id="progressBar"></div></div><div class="small" id="progressText"></div>
@@ -130,13 +171,16 @@ canvas{width:100%;height:230px;background:#09161c;border:1px solid #263e49;borde
 const $=id=>document.getElementById(id);
 const POS=["右0°","右45°","トップ","左45°","左0°"];
 const DEFAULT_NAMES=["クウト","ギンジ","アオト","アサヒ","ソラ","シドウ","コウシン","エイト","カズキ","ユウシ","リト","アキト","シュウト","キラ","ユウシン","ミナト","ケイジ","ダイト","ヒュウガ","ハルキ","ルイ"];
-const KEY_PLAYERS="grass_players_v2",KEY_RECORDS="grass_records_v2",KEY_SETTINGS="grass_shot_settings_v2",KEY_LOCATIONS="grass_test_locations_v1";
+const KEY_PLAYERS="grass_players_v2",KEY_RECORDS="grass_records_v2",KEY_SETTINGS="grass_shot_settings_v2",KEY_LOCATIONS="grass_test_locations_v1",KEY_GROUPS="grass_test_groups_v1";
 function readJSON(key,fallback){try{const v=JSON.parse(localStorage.getItem(key));return v??fallback}catch{return fallback}}
 const oldPlayers=readJSON("grass_players",null);
 let players=readJSON(KEY_PLAYERS,null);
 if(!Array.isArray(players)||!players.length)players=(Array.isArray(oldPlayers)&&oldPlayers.length?oldPlayers:DEFAULT_NAMES.map((name,i)=>({id:"p"+(i+1),name}))).map((p,i)=>({id:String(p.id||"p"+(i+1)),name:String(p.name||"選手"+(i+1))}));
 let records=readJSON(KEY_RECORDS,{});
 let locations=readJSON(KEY_LOCATIONS,{});
+let dailyGroups=readJSON(KEY_GROUPS,{});
+if(!dailyGroups||typeof dailyGroups!=="object"||Array.isArray(dailyGroups))dailyGroups={};
+let currentGroup="A",groupInputStarted=false;
 if(!locations||typeof locations!=="object"||Array.isArray(locations))locations={};
 if(!records||typeof records!=="object"||Array.isArray(records))records={};
 let settings=readJSON(KEY_SETTINGS,null)||{middle:[10,10,10,10,10],long:[10,10,10,10,10],ft:10};
@@ -149,7 +193,7 @@ const today=()=>{const d=new Date();return `${d.getFullYear()}-${String(d.getMon
 const esc=s=>String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
 const recordKey=(d,p,k,i)=>`${d}|${p}|${k}|${i}`;
 function get(d,p,k,i){return records[recordKey(d,p,k,i)]||null}
-function saveAll(){localStorage.setItem(KEY_PLAYERS,JSON.stringify(players));localStorage.setItem(KEY_RECORDS,JSON.stringify(records));localStorage.setItem(KEY_SETTINGS,JSON.stringify(settings));localStorage.setItem(KEY_LOCATIONS,JSON.stringify(locations))}
+function saveAll(){localStorage.setItem(KEY_PLAYERS,JSON.stringify(players));localStorage.setItem(KEY_RECORDS,JSON.stringify(records));localStorage.setItem(KEY_SETTINGS,JSON.stringify(settings));localStorage.setItem(KEY_LOCATIONS,JSON.stringify(locations));localStorage.setItem(KEY_GROUPS,JSON.stringify(dailyGroups))}
 function saveEntry(d,p,k,i,value){
  const ky=recordKey(d,p,k,i);
  if(value===null){delete records[ky]}
@@ -166,6 +210,38 @@ function pct(m,s){return s?`${(m/s*100).toFixed(1)}%`:"--"}
 function dates(){return [...new Set(Object.values(records).filter(r=>r&&r.date).map(r=>r.date))].sort()}
 function metric(d,p,t){return t==="middle"?sum(d,p,"middle"):t==="long"?sum(d,p,"long"):t==="ft"?sum(d,p,"ft"):total(d,p)}
 function aggregate(d,t){return players.reduce((a,p)=>{const x=metric(d,p.id,t);a.made+=x.made;a.shots+=x.shots;return a},{made:0,shots:0})}
+function groupsForDate(d){
+ if(!dailyGroups[d]||typeof dailyGroups[d]!=="object")dailyGroups[d]={A:[],B:[]};
+ dailyGroups[d].A=Array.isArray(dailyGroups[d].A)?dailyGroups[d].A.filter(id=>players.some(p=>p.id===id)):[];
+ dailyGroups[d].B=Array.isArray(dailyGroups[d].B)?dailyGroups[d].B.filter(id=>players.some(p=>p.id===id)&&!dailyGroups[d].A.includes(id)):[];
+ return dailyGroups[d];
+}
+function assignGroup(pid,group){
+ const d=$("testDate").value,g=groupsForDate(d);
+ g.A=g.A.filter(x=>x!==pid);g.B=g.B.filter(x=>x!==pid);
+ if(group==="A"||group==="B")g[group].push(pid);
+ saveAll();renderGroupSetup();
+}
+function renderGroupSetup(){
+ const d=$("testDate").value,g=groupsForDate(d);
+ $("countA").textContent=g.A.length;$("countB").textContent=g.B.length;
+ $("countNone").textContent=players.length-g.A.length-g.B.length;
+ $("groupRoster").innerHTML=players.map(p=>{
+  const assigned=g.A.includes(p.id)?"A":g.B.includes(p.id)?"B":"";
+  return `<div class="group-player"><span class="group-player-name">${esc(p.name)}</span><div class="group-assign"><button type="button" data-assign="A" data-pid="${esc(p.id)}" class="${assigned==="A"?"active-a":""}">A</button><button type="button" data-assign="B" data-pid="${esc(p.id)}" class="${assigned==="B"?"active-b":""}">B</button><button type="button" data-assign="none" data-pid="${esc(p.id)}" class="${!assigned?"active":""}">－</button></div></div>`;
+ }).join("")||'<p class="small">選手を登録してください。</p>';
+ $("groupRoster").querySelectorAll("[data-assign]").forEach(b=>b.onclick=()=>assignGroup(b.dataset.pid,b.dataset.assign==="none"?null:b.dataset.assign));
+ $("groupSetupStatus").textContent=`Aリング ${g.A.length}人 ／ Bリング ${g.B.length}人 ／ 未設定 ${players.length-g.A.length-g.B.length}人`;
+ $("startA").disabled=g.A.length===0;$("startB").disabled=g.B.length===0;
+}
+function startGroupInput(group){
+ const g=groupsForDate($("testDate").value);
+ if(!g[group].length)return alert(`${group}リングに選手を割り当ててください。`);
+ currentGroup=group;groupInputStarted=true;
+ $("groupSetup").classList.add("hidden");$("groupInput").classList.remove("hidden");
+ document.querySelectorAll("[data-group]").forEach(b=>b.classList.toggle("active",b.dataset.group===group));
+ renderPosition();
+}
 function currentPosition(){const k=$("kind").value;return k==="ft"?{kind:k,index:0,label:"フリースロー"}:{kind:k,index:posIndex,label:(k==="middle"?"ミドル":"ロング")+"・"+POS[posIndex]}}
 let activePlayerInputIndex=0;
 function focusNextPlayer(){
@@ -183,35 +259,34 @@ function renderPosition(){
  if(k==="ft")posIndex=0;
  $("positionStrip").innerHTML=labels.map((p,i)=>`<button class="${i===posIndex?"active":""}" data-pos="${i}">${p}</button>`).join("");
  $("positionStrip").querySelectorAll("[data-pos]").forEach(b=>b.addEventListener("click",()=>{posIndex=Number(b.dataset.pos);renderPosition()}));
- const cur=currentPosition(),d=$("testDate").value,shots=shotCount(k,cur.index);
- $("positionTitle").textContent=cur.label;$("positionCount").textContent=`${shots}本設定`;
- $("playerInputs").innerHTML=players.map(p=>{const r=get(d,p.id,k,cur.index);return `<div class="player-row ${r?"done":""}" data-player-row="${esc(p.id)}"><div><b>${esc(p.name)}</b></div><div class="entry-control"><button type="button" class="step-btn" data-step="-1" aria-label="1本減らす">−</button><input type="number" inputmode="numeric" min="0" max="${r?.shots??shots}" step="1" placeholder="0" data-entry="${esc(p.id)}" value="${r?Number(r.made):""}"><button type="button" class="step-btn plus" data-step="1" aria-label="1本増やす">＋</button></div><div class="rate-text">${r?pct(r.made,r.shots):"未入力"}</div></div>`}).join("")||'<p class="small">選手を登録してください。</p>';
+ const cur=currentPosition(),d=$("testDate").value,shots=shotCount(k,cur.index),g=groupsForDate(d);
+ const groupPlayers=g[currentGroup].map(id=>players.find(p=>p.id===id)).filter(Boolean);
+ $("currentGroupName").textContent=`${currentGroup} RING`;
+ $("groupInput").querySelectorAll("[data-group]").forEach(b=>b.classList.toggle("active",b.dataset.group===currentGroup));
+ $("positionTitle").textContent=cur.label;$("positionCount").textContent=`${shots}本設定 · ${groupPlayers.length}人`;
+ $("playerInputs").innerHTML=groupPlayers.map(p=>{const r=get(d,p.id,k,cur.index);return `<div class="player-row ${r?"done":""}" data-player-row="${esc(p.id)}"><div><b>${esc(p.name)}</b></div><div class="entry-control"><button type="button" class="step-btn" data-step="-1" aria-label="1本減らす">−</button><input type="number" inputmode="numeric" min="0" max="${r?.shots??shots}" step="1" placeholder="0" data-entry="${esc(p.id)}" value="${r?Number(r.made):""}"><button type="button" class="step-btn plus" data-step="1" aria-label="1本増やす">＋</button></div><div class="rate-text">${r?pct(r.made,r.shots):"未入力"}</div></div>`}).join("")||'<p class="small">このグループに選手がいません。編成変更から選手を追加してください。</p>';
  const entryInputs=[...$("playerInputs").querySelectorAll("[data-entry]")];
  entryInputs.forEach((input,index)=>{
   input.addEventListener("focus",()=>{activePlayerInputIndex=index});
-  input.addEventListener("keydown",event=>{
-   if(event.key==="Enter"){event.preventDefault();focusNextPlayer()}
-  });
+  input.addEventListener("keydown",event=>{if(event.key==="Enter"){event.preventDefault();focusNextPlayer()}});
   input.addEventListener("input",()=>{
    const p=input.dataset.entry,v=input.value.trim(),n=Number(v),max=Number(input.max);
    const row=input.closest(".player-row"),rate=row.querySelector(".rate-text");
-   if(v==="" ){saveEntry(d,p,k,cur.index,null);row.classList.remove("done");rate.textContent="未入力";input.classList.remove("error")}
-   else if(Number.isInteger(n)&&n>=0&&n<=max){
-    saveEntry(d,p,k,cur.index,n);row.classList.add("done");rate.textContent=pct(n,max);input.classList.remove("error");
-   }else{input.classList.add("error");rate.textContent=`0〜${max}本`;return}
+   if(v===""){saveEntry(d,p,k,cur.index,null);row.classList.remove("done");rate.textContent="未入力";input.classList.remove("error")}
+   else if(Number.isInteger(n)&&n>=0&&n<=max){saveEntry(d,p,k,cur.index,n);row.classList.add("done");rate.textContent=pct(n,max);input.classList.remove("error")}
+   else{input.classList.add("error");rate.textContent=`0〜${max}本`;return}
    updateProgress(d,k,cur.index);renderLive();$("saveStatus").textContent="保存済み · "+new Date().toLocaleTimeString("ja-JP");
   });
  });
  $("playerInputs").querySelectorAll("[data-step]").forEach(button=>button.addEventListener("click",()=>{
-  const input=button.parentElement.querySelector("[data-entry]");
-  const current=input.value.trim()===""?0:Number(input.value);
+  const input=button.parentElement.querySelector("[data-entry]"),current=input.value.trim()===""?0:Number(input.value);
   const next=Math.max(0,Math.min(Number(input.max),current+Number(button.dataset.step)));
   input.value=String(next);input.dispatchEvent(new Event("input",{bubbles:true}));
  }));
  updateProgress(d,k,cur.index);
  $("prevPos").disabled=k==="ft"||posIndex===0;$("nextPos").disabled=k==="ft"||posIndex===4;
 }
-function updateProgress(d,k,i){const entered=players.filter(p=>!!get(d,p.id,k,i)).length;$("progressBar").style.width=(players.length?entered/players.length*100:0)+"%";$("progressText").textContent=`この位置の入力：${entered} / ${players.length}人`}
+function updateProgress(d,k,i){const g=groupsForDate(d),members=g[currentGroup].map(id=>players.find(p=>p.id===id)).filter(Boolean),entered=members.filter(p=>!!get(d,p.id,k,i)).length;$("progressBar").style.width=(members.length?entered/members.length*100:0)+"%";$("progressText").textContent=`${currentGroup}リング・この位置の入力：${entered} / ${members.length}人`}
 function renderLive(){const d=$("testDate").value;for(const [t,id] of [["middle","Middle"],["long","Long"],["ft","Ft"]]){const a=aggregate(d,t);$("live"+id).textContent=pct(a.made,a.shots);$("live"+id+"Count").textContent=`${a.made} / ${a.shots}本`}const t=aggregate(d,"total");$("liveTotal").textContent=pct(t.made,t.shots);$("liveTotalCount").textContent=`${t.made} / ${t.shots}本`}
 function renderCalendar(target,selected){
  const el=$(target),ds=dates(),base=selected||ds[ds.length-1]||today(),dt=new Date(base+"T12:00:00"),y=dt.getFullYear(),m=dt.getMonth(),first=new Date(y,m,1),start=new Date(y,m,1-first.getDay()),cells=[];
@@ -281,10 +356,10 @@ function downloadIndividual(){
  if(!ds.length)return alert("この選手の記録がありません。");
 
  // 個人データは日ごとの集計のみを書き出す。位置別データは結果・ランキングで確認。
- const rows=[["実施日","トータル","ミドル","ロング","FT"]];
+ const rows=[["実施日","場所","トータル","ミドル","ロング","FT"]];
  ds.slice().reverse().forEach(d=>{
   const t=total(d,p.id),m=sum(d,p.id,"middle"),l=sum(d,p.id,"long"),f=sum(d,p.id,"ft");
-  rows.push([d,pct(t.made,t.shots),pct(m.made,m.shots),pct(l.made,l.shots),pct(f.made,f.shots)]);
+  rows.push([d,locations[d]||"未登録",pct(t.made,t.shots),pct(m.made,m.shots),pct(l.made,l.shots),pct(f.made,f.shots)]);
  });
  const blob=new Blob(["\uFEFF"+rows.map(r=>r.map(csvCell).join(",")).join("\r\n")],{type:"text/csv;charset=utf-8"});
  const a=document.createElement("a"),url=URL.createObjectURL(blob);a.href=url;a.download=`GRASSHOPPER_${p.name}_個人データ.csv`;document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),3000);
@@ -350,12 +425,12 @@ function dailyCsv(d){
 function downloadDaily(d){const a=document.createElement("a"),url=URL.createObjectURL(dailyCsv(d));a.href=url;a.download=`GRASSHOPPER_${d}.csv`;document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),3000)}
 // 端末間共有用CSV。計算値は含めず、実績データだけを受け渡す。
 function shareCsv(){
- const rows=[["GRASSHOPPER_SHARE_V1"],["date","player","kind","pos","made","shots"]];
+ const rows=[["GRASSHOPPER_SHARE_V2"],["date","location","player","kind","pos","made","shots"]];
  const nameById=new Map(players.map(p=>[String(p.id),p.name]));
  Object.values(records).filter(r=>r&&r.date&&r.player!=null).sort((a,b)=>a.date.localeCompare(b.date)||String(a.player).localeCompare(String(b.player))).forEach(r=>{
   const name=nameById.get(String(r.player));
   if(!name)return;
-  rows.push([r.date,name,r.kind,Number(r.pos)||0,Number(r.made),Number(r.shots)]);
+  rows.push([r.date,locations[r.date]||"",name,r.kind,Number(r.pos)||0,Number(r.made),Number(r.shots)]);
  });
  return new Blob(["\uFEFF"+rows.map(r=>r.map(csvCell).join(",")).join("\r\n")],{type:"text/csv;charset=utf-8"});
 }
@@ -377,18 +452,21 @@ function parseCsv(text){
  return out;
 }
 async function importShareFile(file){
- const raw=(await file.text()).replace(/^\uFEFF/,"");
+ const raw=(await file.text()).replace(/^\\uFEFF/,"");
  const rows=parseCsv(raw);
- if(!rows.length||rows[0][0]!=="GRASSHOPPER_SHARE_V1")throw new Error("共有用CSVではありません。通常の集計CSVではなく、共有データを書き出したファイルを選んでください。");
- if((rows[1]||[]).join(",")!=="date,player,kind,pos,made,shots")throw new Error("共有データの形式が正しくありません。");
+ if(!rows.length||!["GRASSHOPPER_SHARE_V1","GRASSHOPPER_SHARE_V2"].includes(rows[0][0]))throw new Error("共有用CSVではありません。通常の集計CSVではなく、共有データを書き出したファイルを選んでください。");
+ const version=rows[0][0];
+ const expectedHeader=version==="GRASSHOPPER_SHARE_V2"?"date,location,player,kind,pos,made,shots":"date,player,kind,pos,made,shots";
+ if((rows[1]||[]).join(",")!==expectedHeader)throw new Error("共有データの形式が正しくありません。");
  let added=0,skipped=0,conflicts=0,invalid=0,newPlayers=0;
  const playerMap=new Map(players.map(p=>[String(p.name).trim(),String(p.id)]));
  const pending=[];
  for(const row of rows.slice(2)){
-  if(!row||row.length<6||row.every(v=>!String(v).trim()))continue;
-  const [date,name,kind,posText,madeText,shotsText]=row;
+  if(!row||row.length<(version==="GRASSHOPPER_SHARE_V2"?7:6)||row.every(v=>!String(v).trim()))continue;
+  const [date,location,name,kind,posText,madeText,shotsText]=version==="GRASSHOPPER_SHARE_V2"?row:[row[0],"",row[1],row[2],row[3],row[4],row[5]];
+  if(!/^\\d{4}-\\d{2}-\\d{2}$/.test(date)||!String(name||"").trim()||!["middle","long","ft"].includes(kind)||!Number.isInteger(Number(posText))||Number(posText)<0||Number(posText)>(kind==="ft"?0:4)||!Number.isInteger(Number(madeText))||!Number.isInteger(Number(shotsText))||Number(shotsText)<1||Number(shotsText)>200||Number(madeText)<0||Number(madeText)>Number(shotsText)){invalid++;continue}
+  if(version==="GRASSHOPPER_SHARE_V2"&&location&&!locations[date])locations[date]=location;
   const pos=Number(posText),made=Number(madeText),shots=Number(shotsText);
-  if(!/^\d{4}-\d{2}-\d{2}$/.test(date)||!String(name||"").trim()||!["middle","long","ft"].includes(kind)||!Number.isInteger(pos)||pos<(kind==="ft"?0:0)||pos>(kind==="ft"?0:4)||!Number.isInteger(made)||!Number.isInteger(shots)||shots<1||shots>200||made<0||made>shots){invalid++;continue}
   const cleanName=String(name).trim();
   let pid=playerMap.get(cleanName);
   if(!pid){pid="imp_"+Date.now()+"_"+(newPlayers+1);players.push({id:pid,name:cleanName});playerMap.set(cleanName,pid);newPlayers++}
@@ -404,11 +482,17 @@ async function importShareFile(file){
  return {added,skipped,conflicts,invalid,newPlayers};
 }
 document.querySelectorAll("nav [data-tab]").forEach(b=>b.onclick=()=>{document.querySelectorAll("nav button").forEach(x=>x.classList.toggle("active",x===b));document.querySelectorAll(".tab").forEach(x=>x.classList.toggle("active",x.id===b.dataset.tab));renderAll();if(b.dataset.tab==="input")renderPosition()});
-$("kind").onchange=()=>{posIndex=0;renderPosition()};
+$("kind").onchange=()=>{posIndex=0;if(groupInputStarted)renderPosition()};
+$("startA").onclick=()=>startGroupInput("A");
+$("startB").onclick=()=>startGroupInput("B");
+$("editGroups").onclick=()=>{$("groupInput").classList.add("hidden");$("groupSetup").classList.remove("hidden");groupInputStarted=false;renderGroupSetup()};
+document.querySelectorAll("[data-group]").forEach(b=>b.onclick=()=>{if(groupsForDate($("testDate").value)[b.dataset.group].length){currentGroup=b.dataset.group;renderPosition()}else alert(`${b.dataset.group}リングに選手がいません。編成変更から追加してください。`)});
+
 $("testDate").value=today();
+renderGroupSetup();
 $("testLocation").value=locations[today()]||"";
 $("testLocation").onchange=()=>{const d=$("testDate").value;if(!d)return;const v=$("testLocation").value.trim();if(v)locations[d]=v;else delete locations[d];saveAll();if(selectedResultDate===d)renderResults()};
-$("testDate").onchange=()=>{$("testLocation").value=locations[$("testDate").value]||"";renderPosition();renderLive()};
+$("testDate").onchange=()=>{$("testLocation").value=locations[$("testDate").value]||"";groupInputStarted=false;$("groupInput").classList.add("hidden");$("groupSetup").classList.remove("hidden");renderGroupSetup();renderLive()};
 $("prevPos").onclick=()=>{if(posIndex>0)posIndex--;renderPosition()};
 $("nextPos").onclick=()=>{if(posIndex<4)posIndex++;renderPosition();$("playerInputs").querySelector("input")?.focus()};
 document.querySelectorAll("[data-result-view]").forEach(b=>b.onclick=()=>{resultView=b.dataset.resultView;renderResults()});
@@ -416,7 +500,7 @@ $("individualPlayer").onchange=renderIndividual;
 $("exportIndividual").onclick=downloadIndividual;
 $("exportDay").onclick=()=>{if(selectedResultDate)downloadDaily(selectedResultDate)};
 $("endTest").onclick=()=>{const d=$("testDate").value;if(!d)return alert("実施日を選択してください");if(!dates().includes(d))return alert("この日の入力記録がありません");downloadDaily(d)};
-$("addPlayer").onclick=()=>{const name=$("newPlayer").value.trim();if(!name)return alert("選手名を入力してください");if(players.some(p=>p.name===name))return alert("同じ名前が登録されています");players.push({id:"p"+Date.now(),name});$("newPlayer").value="";saveAll();renderAll();renderPosition()};
+$("addPlayer").onclick=()=>{const name=$("newPlayer").value.trim();if(!name)return alert("選手名を入力してください");if(players.some(p=>p.name===name))return alert("同じ名前が登録されています");players.push({id:"p"+Date.now(),name});$("newPlayer").value="";saveAll();renderAll();renderGroupSetup();if(groupInputStarted)renderPosition()};
 $("saveSettings").onclick=()=>{for(const x of document.querySelectorAll("[data-shot]")){const n=Number(x.value);if(!validShot(n))return alert("試投数は1〜200本で設定してください");settings[x.dataset.shot][Number(x.dataset.index)]=n}const ft=Number($("ftSetting").value);if(!validShot(ft))return alert("フリースローは1〜200本で設定してください");settings.ft=ft;saveAll();renderPosition();alert("設定を保存しました")};
 
 $("deleteSelectedDate").onclick=()=>askDelete(selectedRecordDate);
@@ -428,11 +512,17 @@ $("importShareFile").onchange=async e=>{
  const file=e.target.files?.[0];if(!file)return;
  try{
   const result=await importShareFile(file);
-  alert(`データを取り込みました。\n追加した記録：${result.added}件\n追加した選手：${result.newPlayers}人\n重複・競合でスキップ：${result.skipped}件\n内容が異なる競合：${result.conflicts}件\n形式不正で除外：${result.invalid}件`);
+  alert(`データを取り込みました。
+追加した記録：${result.added}件
+追加した選手：${result.newPlayers}人
+重複・競合でスキップ：${result.skipped}件
+内容が異なる競合：${result.conflicts}件
+形式不正で除外：${result.invalid}件`);
  }catch(err){alert(err.message||"ファイルを読み込めませんでした。");}
  e.target.value="";
 };
-saveAll();$("testDate").value=today();renderAll();renderPosition();
+saveAll();$("testDate").value=today();
+renderGroupSetup();renderAll();renderPosition();
 if("serviceWorker"in navigator)window.addEventListener("load",()=>navigator.serviceWorker.register("./sw.js").catch(()=>{}));
 </script>
 </body>
