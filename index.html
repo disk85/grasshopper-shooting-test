@@ -574,19 +574,19 @@ function parseCsv(text){
  return out;
 }
 async function importShareFile(file){
- const raw=(await file.text()).replace(/^\\uFEFF/,"");
- const rows=parseCsv(raw);
+ const raw=(await file.text()).replace(/^\uFEFF/,"");
+ const rows=parseCsv(raw).map(row=>row.map((v,i)=>i===0?String(v).replace(/^\uFEFF/,"").trim():String(v).trim()));
  if(!rows.length||!["GRASSHOPPER_SHARE_V1","GRASSHOPPER_SHARE_V2"].includes(rows[0][0]))throw new Error("共有用CSVではありません。通常の集計CSVではなく、共有データを書き出したファイルを選んでください。");
  const version=rows[0][0];
- const expectedHeader=version==="GRASSHOPPER_SHARE_V2"?"date,location,player,kind,pos,made,shots":"date,player,kind,pos,made,shots";
- if((rows[1]||[]).join(",")!==expectedHeader)throw new Error("共有データの形式が正しくありません。");
+ const expected=version==="GRASSHOPPER_SHARE_V2"?["date","location","player","kind","pos","made","shots"]:["date","player","kind","pos","made","shots"];
+ if(JSON.stringify(rows[1]||[])!==JSON.stringify(expected))throw new Error("共有データの形式が正しくありません。");
  let added=0,skipped=0,conflicts=0,invalid=0,newPlayers=0;
  const playerMap=new Map(players.map(p=>[String(p.name).trim(),String(p.id)]));
  const pending=[];
  for(const row of rows.slice(2)){
   if(!row||row.length<(version==="GRASSHOPPER_SHARE_V2"?7:6)||row.every(v=>!String(v).trim()))continue;
   const [date,location,name,kind,posText,madeText,shotsText]=version==="GRASSHOPPER_SHARE_V2"?row:[row[0],"",row[1],row[2],row[3],row[4],row[5]];
-  if(!/^\\d{4}-\\d{2}-\\d{2}$/.test(date)||!String(name||"").trim()||!["middle","long","ft"].includes(kind)||!Number.isInteger(Number(posText))||Number(posText)<0||Number(posText)>(kind==="ft"?0:4)||!Number.isInteger(Number(madeText))||!Number.isInteger(Number(shotsText))||Number(shotsText)<1||Number(shotsText)>200||Number(madeText)<0||Number(madeText)>Number(shotsText)){invalid++;continue}
+  if(!/^\d{4}-\d{2}-\d{2}$/.test(date)||!String(name||"").trim()||!["middle","long","ft"].includes(kind)||!Number.isInteger(Number(posText))||Number(posText)<0||Number(posText)>(kind==="ft"?0:4)||!Number.isInteger(Number(madeText))||!Number.isInteger(Number(shotsText))||Number(shotsText)<1||Number(shotsText)>200||Number(madeText)<0||Number(madeText)>Number(shotsText)){invalid++;continue}
   if(version==="GRASSHOPPER_SHARE_V2"&&location&&!locations[date])locations[date]=location;
   const pos=Number(posText),made=Number(madeText),shots=Number(shotsText);
   const cleanName=String(name).trim();
