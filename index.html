@@ -79,6 +79,11 @@ canvas{width:100%;height:230px;background:#09161c;border:1px solid #263e49;borde
 .group-toggle button.active[data-group="B"]{background:var(--blue);color:#071116;border-color:var(--blue)}
 @media(min-width:700px){.group-roster{grid-template-columns:repeat(2,minmax(0,1fr))}}
 
+
+.share-report-tools{margin:14px 0}
+.share-report-preview{overflow:auto;background:#dce2e5;border-radius:10px;padding:8px;margin-top:8px}
+#shareReportCanvas{display:block;width:100%;height:auto;max-width:100%;background:#fff;border-radius:4px}
+
 </style>
 </head>
 <body>
@@ -143,7 +148,15 @@ canvas{width:100%;height:230px;background:#09161c;border:1px solid #263e49;borde
   <div id="resultTableWrap" class="table-wrap"></div>
   <div id="resultRankWrap" hidden></div>
   <p class="small" id="previousCompare"></p>
-  <button class="btn primary wide" id="exportDay">選択日のCSVを出力</button>
+  <div class="share-report-tools">
+   <button class="btn primary wide" id="createShareReport">共有用レポートを作成</button>
+   <div id="shareReportArea" class="hidden">
+    <p class="small">iPhoneでは共有メニューから「画像を保存」、PCではPNG画像をダウンロードできます。保存した画像をLINEアルバムに追加してください。</p>
+    <div class="share-report-preview"><canvas id="shareReportCanvas"></canvas></div>
+    <button class="btn primary wide" id="saveShareReport">PNG画像を保存</button>
+   </div>
+  </div>
+  <button class="btn secondary wide" id="exportDay">選択日のCSVを出力</button>
  </div>
 </section>
 <section id="individual" class="tab">
@@ -329,10 +342,119 @@ function renderResultRanks(d){
   return `<div class="result-rank-card"><h3>${title}</h3>${list.length?list.map(x=>`<div class="result-rank-row"><b>${x.rank}</b><span>${esc(x.p.name)}</span><strong>${x.rate}</strong></div>`).join(""):'<p class="small">記録なし</p>'}</div>`;
  }).join("")}</div>`;
 }
+
+function drawShareReport(d){
+ if(!d)return false;
+ const canvas=$("shareReportCanvas"),ctx=canvas.getContext("2d");
+ const active=players.filter(p=>["middle","long","ft"].some(k=>sum(d,p.id,k).shots));
+ const W=1800,margin=54,tableTop=270,headerH=82,rowH=48;
+ const cols=[
+  {key:"name",label:"選手",w:150,align:"left"},
+  ...POS.map((p,i)=>({key:"m"+i,label:"M "+p,w:82,align:"center"})),
+  {key:"mRate",label:"ミドル率",w:100,align:"center"},
+  {key:"mShots",label:"本数",w:74,align:"center"},
+  ...POS.map((p,i)=>({key:"l"+i,label:"L "+p,w:82,align:"center"})),
+  {key:"lRate",label:"ロング率",w:100,align:"center"},
+  {key:"lShots",label:"本数",w:74,align:"center"},
+  {key:"total",label:"合計率",w:108,align:"center"},
+  {key:"ft",label:"FT率",w:88,align:"center"}
+ ];
+ const tableW=cols.reduce((a,c)=>a+c.w,0);
+ const rankTop=tableTop+headerH+active.length*rowH+50;
+ const rankH=360,footerH=90;
+ canvas.width=W;canvas.height=rankTop+rankH+footerH;
+ ctx.fillStyle="#ffffff";ctx.fillRect(0,0,W,canvas.height);
+ const lime="#9bd34a",ink="#111820",muted="#52616a",line="#27333a",pale="#e9f1f5";
+ ctx.textBaseline="middle";
+ // Header
+ ctx.fillStyle=ink;ctx.textAlign="center";ctx.font="900 58px Arial, sans-serif";
+ ctx.fillText("GRASSHOPPER",W/2,75);
+ ctx.fillStyle="#53616a";ctx.font="bold 25px Arial, sans-serif";
+ ctx.fillText("SHOOTING TEST  /  DAILY REPORT",W/2,122);
+ ctx.fillStyle=ink;ctx.font="bold 30px Arial, sans-serif";ctx.textAlign="left";
+ ctx.fillText("DATE",margin,190);ctx.font="bold 34px Arial, sans-serif";
+ ctx.fillText(d.replaceAll("-","."),margin+105,190);
+ ctx.font="bold 30px Arial, sans-serif";ctx.fillText("LOCATION",W/2+40,190);
+ ctx.font="bold 34px Arial, sans-serif";ctx.fillText(locations[d]||"未登録",W/2+230,190);
+ ctx.strokeStyle=line;ctx.lineWidth=2;ctx.beginPath();ctx.moveTo(margin,224);ctx.lineTo(W-margin,224);ctx.stroke();
+ // Table header
+ const tableX=(W-tableW)/2;
+ let x=tableX,y=tableTop;
+ ctx.fillStyle=ink;ctx.fillRect(x,y,tableW,headerH);
+ ctx.font="bold 21px Arial, 'Noto Sans JP', sans-serif";ctx.fillStyle="#fff";
+ cols.forEach(c=>{ctx.textAlign=c.align==="left"?"left":"center";ctx.fillText(c.label,x+(c.align==="left"?12:c.w/2),y+headerH/2);x+=c.w});
+ const rows=active.map(p=>{
+  const m=sum(d,p.id,"middle"),l=sum(d,p.id,"long"),t=total(d,p.id),f=sum(d,p.id,"ft");
+  return {p,m,l,t,f,values:[p.name,...POS.map((_,i)=>get(d,p.id,"middle",i)?.made??"—"),pct(m.made,m.shots),m.shots||"—",...POS.map((_,i)=>get(d,p.id,"long",i)?.made??"—"),pct(l.made,l.shots),l.shots||"—",pct(t.made,t.shots),pct(f.made,f.shots)]};
+ });
+ rows.forEach((r,ri)=>{
+  x=tableX;y=tableTop+headerH+ri*rowH;
+  ctx.fillStyle=ri%2===0?"#f1f4f5":"#ffffff";ctx.fillRect(x,y,tableW,rowH);
+  ctx.strokeStyle="#aeb8bd";ctx.lineWidth=1;ctx.beginPath();ctx.moveTo(x,y+rowH);ctx.lineTo(x+tableW,y+rowH);ctx.stroke();
+  r.values.forEach((v,ci)=>{
+   const c=cols[ci];
+   if(c.key==="mRate"||c.key==="lRate"||c.key==="total"||c.key==="ft"){ctx.fillStyle=c.key==="total"?lime:pale;ctx.fillRect(x,y,c.w,rowH)}
+   if(c.key==="mShots"||c.key==="lShots"){ctx.fillStyle="#fff1a8";ctx.fillRect(x,y,c.w,rowH)}
+   ctx.fillStyle=ink;ctx.font=ci===0?"bold 21px Arial, 'Noto Sans JP', sans-serif":"bold 20px Arial, sans-serif";
+   ctx.textAlign=ci===0?"left":"center";ctx.fillText(String(v),x+(ci===0?10:c.w/2),y+rowH/2);x+=c.w;
+  });
+ });
+ // Grid lines
+ x=tableX;ctx.strokeStyle="#26343b";ctx.lineWidth=2;
+ cols.forEach(c=>{ctx.beginPath();ctx.moveTo(x,tableTop);ctx.lineTo(x,tableTop+headerH+rows.length*rowH);ctx.stroke();x+=c.w});
+ ctx.beginPath();ctx.moveTo(x,tableTop);ctx.lineTo(x,tableTop+headerH+rows.length*rowH);ctx.stroke();
+ // Three ranking panels
+ const specs=[["MIDDLE  /  ミドル確率 BEST 5","middle"],["LONG  /  ロング確率 BEST 5","long"],["TOTAL  /  トータル確率 BEST 5","total"]];
+ const gap=26,panelW=(W-margin*2-gap*2)/3;
+ specs.forEach(([title,key],idx)=>{
+  const px=margin+idx*(panelW+gap),py=rankTop;
+  ctx.fillStyle=idx===2?lime:ink;ctx.fillRect(px,py,panelW,54);
+  ctx.fillStyle=idx===2?ink:"#ffffff";ctx.font="bold 23px Arial, 'Noto Sans JP', sans-serif";ctx.textAlign="center";ctx.fillText(title,px+panelW/2,py+27);
+  const list=rankingGroups(d,key).filter(o=>o.rank<=5);
+  list.forEach((o,i)=>{
+   const yy=py+72+i*54;
+   ctx.strokeStyle="#aab4ba";ctx.lineWidth=1;ctx.beginPath();ctx.moveTo(px,yy+27);ctx.lineTo(px+panelW,yy+27);ctx.stroke();
+   ctx.fillStyle=ink;ctx.font="bold 23px Arial, sans-serif";ctx.textAlign="center";ctx.fillText(String(o.rank),px+38,yy);
+   ctx.textAlign="left";ctx.font="bold 24px Arial, 'Noto Sans JP', sans-serif";ctx.fillText(o.p.name,px+78,yy);
+   ctx.textAlign="right";ctx.font="bold 26px Arial, sans-serif";ctx.fillText(o.rate,px+panelW-18,yy);
+  });
+  if(!list.length){ctx.fillStyle=muted;ctx.font="22px Arial, sans-serif";ctx.textAlign="center";ctx.fillText("記録なし",px+panelW/2,py+115)}
+ });
+ ctx.fillStyle=muted;ctx.font="20px Arial, sans-serif";ctx.textAlign="center";
+ ctx.fillText("GRASSHOPPER  ·  PLAYER DEVELOPMENT",W/2,canvas.height-42);
+ return true;
+}
+function createShareReport(){
+ const d=selectedResultDate;
+ if(!d||!dates().includes(d)){alert("共有する日の記録がありません。");return}
+ if(!drawShareReport(d))return;
+ $("shareReportArea").classList.remove("hidden");
+ $("shareReportArea").scrollIntoView({behavior:"smooth",block:"start"});
+}
+async function saveShareReport(){
+ const canvas=$("shareReportCanvas"),d=selectedResultDate;
+ if(!canvas.width||!canvas.height)return alert("先に共有用レポートを作成してください。");
+ canvas.toBlob(async blob=>{
+  if(!blob)return alert("画像を作成できませんでした。");
+  const filename=`GRASSHOPPER_SHOOT_TEST_${d}.png`;
+  try{
+   const file=new File([blob],filename,{type:"image/png"});
+   if(navigator.share&&navigator.canShare&&navigator.canShare({files:[file]})){
+    await navigator.share({files:[file],title:`GRASSHOPPER SHOOT TEST ${d}`});
+    return;
+   }
+  }catch(error){if(error&&error.name==="AbortError")return}
+  const url=URL.createObjectURL(blob),a=document.createElement("a");
+  a.href=url;a.download=filename;
+  document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),5000);
+ },"image/png");
+}
+
 function renderResults(){
  const ds=dates();if(!selectedResultDate||!ds.includes(selectedResultDate))selectedResultDate=ds[ds.length-1]||"";
  renderCalendar("resultsCalendar",selectedResultDate||today());
  $("resultsDateLabel").textContent=selectedResultDate||"記録なし";
+ $("shareReportArea").classList.add("hidden");
  $("resultsLocationLabel").textContent="場所："+(locations[selectedResultDate]||"未登録");
  document.querySelectorAll("[data-result-view]").forEach(b=>b.classList.toggle("active",b.dataset.resultView===resultView));
  if(resultView==="ranking")renderResultRanks(selectedResultDate);else renderResultTable(selectedResultDate,resultView);
@@ -496,6 +618,8 @@ $("testDate").onchange=()=>{$("testLocation").value=locations[$("testDate").valu
 $("prevPos").onclick=()=>{if(posIndex>0)posIndex--;renderPosition()};
 $("nextPos").onclick=()=>{if(posIndex<4)posIndex++;renderPosition();$("playerInputs").querySelector("input")?.focus()};
 document.querySelectorAll("[data-result-view]").forEach(b=>b.onclick=()=>{resultView=b.dataset.resultView;renderResults()});
+$("createShareReport").onclick=createShareReport;
+$("saveShareReport").onclick=saveShareReport;
 $("individualPlayer").onchange=renderIndividual;
 $("exportIndividual").onclick=downloadIndividual;
 $("exportDay").onclick=()=>{if(selectedResultDate)downloadDaily(selectedResultDate)};
