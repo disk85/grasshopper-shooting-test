@@ -37,14 +37,21 @@ nav button{
   border:1px solid #38505b;
   border-bottom:3px solid #38505b;
   border-radius:10px;
-  background:transparent;
-  color:#b6c4cb;
+  background:linear-gradient(180deg,#172a33 0%,#102029 100%);
+  color:#e4edf1;
   padding:10px 4px;
   font-size:clamp(10px,1.15vw,13px);
-  font-weight:bold;
-  border-bottom:3px solid transparent;
+  font-weight:800;
+  box-shadow:0 2px 0 rgba(0,0,0,.25);
+  transition:background .15s ease,border-color .15s ease,transform .15s ease;
 }
-nav button.active{color:#fff;border-color:var(--lime)}
+nav button.active{
+  color:#c6f43b;
+  border:1px solid #c6f43b;
+  border-bottom:3px solid #c6f43b;
+  background:linear-gradient(180deg,rgba(198,244,59,.18) 0%,rgba(198,244,59,.08) 100%);
+  box-shadow:0 0 0 1px rgba(198,244,59,.12),0 2px 0 rgba(0,0,0,.25);
+}
 @media(max-width:600px){
   .header-logo{width:96vw;max-height:125px}
   header{padding:8px 6px 9px}
